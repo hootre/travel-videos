@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#10141A">
+<title>여행 영상함</title>
+<style>
+  :root {
+    --bg: #10141A;
+    --panel: #181E27;
+    --panel-2: #202836;
+    --ink: #F1EFEA;
+    --muted: #8A93A5;
+    --line: #2A3342;
+    --accent: #FF7E5F;
+    --accent-deep: #E2593A;
+    --danger: #FF6B6B;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(900px 420px at 85% -10%, rgba(255, 126, 95, .10) 0%, transparent 60%),
+      var(--bg);
+    color: var(--ink);
+    font-family: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 30px 18px calc(44px + env(safe-area-inset-bottom));
+  }
+
+  header { margin-bottom: 22px; }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand .mark { font-size: 24px; }
+  h1 { margin: 0; font-size: 21px; font-weight: 800; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  #count { color: var(--accent); font-variant-numeric: tabular-nums; }
+
+  /* 링크 추가 바 */
+  #addBar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  #linkInput {
+    flex: 1;
+    height: 50px;
+    border-radius: var(--radius);
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--ink);
+    padding: 0 16px;
+    font-size: 15px;
+    font-family: inherit;
+    outline: none;
+    min-width: 0;
+  }
+  #linkInput:focus { border-color: var(--accent-deep); }
+  #linkInput::placeholder { color: #4E576A; }
+  #addBtn {
+    height: 50px;
+    padding: 0 22px;
+    border-radius: var(--radius);
+    border: none;
+    background: var(--accent);
+    color: #1C0F0A;
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+    font-family: inherit;
+    flex: none;
+  }
+  #addBtn:active { background: var(--accent-deep); }
+  #addBtn:disabled { opacity: .5; cursor: default; }
+  #addMsg { font-size: 13px; color: var(--danger); margin: 0 0 12px 4px; display: none; }
+
+  .tools { display: flex; gap: 8px; margin-bottom: 18px; }
+  #search {
+    flex: 1;
+    height: 42px;
+    border-radius: 21px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--ink);
+    padding: 0 16px;
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    min-width: 0;
+  }
+  #search:focus { border-color: var(--accent-deep); }
+  #search::placeholder { color: #4E576A; }
+  #sortBtn {
+    height: 42px;
+    padding: 0 14px;
+    border-radius: 21px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--muted);
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    flex: none;
+  }
+
+  /* 카드 그리드 */
+  #grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 14px;
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: transform .12s, border-color .12s;
+  }
+  .card:hover { transform: translateY(-2px); border-color: #38445A; }
+  .thumb {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    background: #0A0D12;
+    cursor: pointer;
+    border: none;
+    padding: 0;
+    display: block;
+    width: 100%;
+  }
+  .thumb img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .thumb .play {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(10, 12, 16, .25);
+    transition: background .12s;
+  }
+  .thumb:hover .play { background: rgba(10, 12, 16, .05); }
+  .thumb .play span {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: rgba(16, 20, 26, .8);
+    border: 1.5px solid rgba(255, 255, 255, .55);
+    color: #fff;
+    font-size: 19px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-left: 4px;
+  }
+  .thumb:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 7px; flex: 1; }
+  .place {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .title {
+    font-size: 14.5px;
+    font-weight: 700;
+    line-height: 1.45;
+    letter-spacing: -0.01em;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  .memo {
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.5;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  .foot {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-top: 6px;
+  }
+  .date { font-size: 11.5px; color: #57617A; font-variant-numeric: tabular-nums; }
+  .foot .acts { display: flex; gap: 2px; }
+  .foot button {
+    background: none;
+    border: none;
+    color: #57617A;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 6px;
+    font-family: inherit;
+  }
+  .foot button:hover { color: var(--ink); background: var(--panel-2); }
+
+  #empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: var(--muted);
+    padding: 60px 20px;
+    font-size: 14.5px;
+    line-height: 1.8;
+    border: 1px dashed var(--line);
+    border-radius: var(--radius);
+  }
+  #empty b { color: var(--ink); }
+
+  /* 재생 모달 */
+  #playerOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(6, 8, 11, .92);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+    padding: 20px;
+  }
+  #playerOverlay.on { display: flex; }
+  #playerBox {
+    width: 100%;
+    max-width: 900px;
+  }
+  #playerBox .frame {
+    aspect-ratio: 16 / 9;
+    background: #000;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  #playerBox iframe { width: 100%; height: 100%; border: 0; display: block; }
+  #playerBox .pmeta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  #pTitle { font-size: 15px; font-weight: 700; }
+  #playerBox .pmeta .btns { display: flex; gap: 8px; flex: none; }
+  #playerBox .pmeta button, #playerBox .pmeta a {
+    height: 40px;
+    padding: 0 16px;
+    display: inline-flex;
+    align-items: center;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--ink);
+    font-size: 13.5px;
+    cursor: pointer;
+    font-family: inherit;
+    text-decoration: none;
+  }
+
+  /* 수정 모달 */
+  #editOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(6, 8, 11, .75);
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 30;
+  }
+  #editOverlay.on { display: flex; }
+  #sheet {
+    width: 100%;
+    max-width: 540px;
+    background: var(--panel-2);
+    border-radius: 20px 20px 0 0;
+    padding: 22px 20px calc(24px + env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+  }
+  @media (min-width: 580px) {
+    #editOverlay { align-items: center; }
+    #sheet { border-radius: 20px; }
+  }
+  #sheet h2 { margin: 0; font-size: 17px; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label {
+    font-size: 11px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .field input {
+    height: 46px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--ink);
+    padding: 0 14px;
+    font-size: 15px;
+    font-family: inherit;
+    outline: none;
+  }
+  .field input:focus { border-color: var(--accent-deep); }
+  .row { display: flex; gap: 10px; }
+  .row .field { flex: 1; }
+  #sheet .btns { display: flex; gap: 10px; margin-top: 4px; }
+  #sheet .btns button {
+    flex: 1;
+    height: 50px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--muted);
+  }
+  #sheet .btns .save {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #1C0F0A;
+  }
+
+  footer {
+    margin-top: 30px;
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+  }
+  footer button {
+    background: none;
+    border: none;
+    color: #4E576A;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  footer button:hover { color: var(--muted); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card, .thumb .play { transition: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <span class="mark">🧳</span>
+      <div>
+        <h1>여행 영상함</h1>
+        <p class="sub">유튜브 링크를 붙여넣으면 여행 기록 카드가 됩니다 · <span id="count">0</span>편 보관 중</p>
+      </div>
+    </div>
+  </header>
+
+  <div id="addBar">
+    <input id="linkInput" type="url" placeholder="유튜브 링크 붙여넣기 (youtube.com / youtu.be)" inputmode="url" autocapitalize="off" autocomplete="off">
+    <button id="addBtn">추가</button>
+  </div>
+  <p id="addMsg"></p>
+
+  <div class="tools">
+    <input id="search" type="search" placeholder="제목·여행지·메모 검색" autocomplete="off">
+    <button id="sortBtn" title="정렬 바꾸기">최신순</button>
+  </div>
+
+  <div id="grid" role="list"></div>
+
+  <footer>
+    <button id="exportBtn">백업 내보내기</button>
+    <button id="importBtn">가져오기</button>
+    <input id="importFile" type="file" accept="application/json" hidden>
+  </footer>
+</div>
+
+<div id="playerOverlay">
+  <div id="playerBox">
+    <div class="frame"><iframe id="playerFrame" src="about:blank" title="영상 재생" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>
+    <div class="pmeta">
+      <div id="pTitle"></div>
+      <div class="btns">
+        <a id="pYoutube" href="#" target="_blank" rel="noopener">유튜브에서 열기</a>
+        <button id="pClose">닫기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="editOverlay">
+  <div id="sheet" role="dialog" aria-modal="true">
+    <h2>영상 정보 수정</h2>
+    <div class="field">
+      <label for="eTitle">제목</label>
+      <input id="eTitle">
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="ePlace">여행지</label>
+        <input id="ePlace" placeholder="예: 제주도, 오사카">
+      </div>
+      <div class="field">
+        <label for="eDate">여행 날짜</label>
+        <input id="eDate" type="date">
+      </div>
+    </div>
+    <div class="field">
+      <label for="eMemo">메모</label>
+      <input id="eMemo" placeholder="같이 간 사람, 기억나는 순간…">
+    </div>
+    <div class="btns">
+      <button type="button" id="eCancel">취소</button>
+      <button type="button" class="save" id="eSave">저장</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var KEY = "travel.videos.v1";
+
+  var videos = [];
+  try {
+    var saved = JSON.parse(localStorage.getItem(KEY));
+    if (Array.isArray(saved)) videos = saved;
+  } catch (e) {}
+
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(videos)); } catch (e) {} }
+
+  function parseId(url) {
+    var m = url.match(/(?:youtube\.com\/(?:watch\?[^#]*v=|shorts\/|embed\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+    return m ? m[1] : null;
+  }
+
+  var sortNewest = true;
+
+  function msg(t) {
+    var el = $("addMsg");
+    el.textContent = t || "";
+    el.style.display = t ? "block" : "none";
+  }
+
+  function render() {
+    var q = $("search").value.trim().toLowerCase();
+    var grid = $("grid");
+    grid.innerHTML = "";
+    $("count").textContent = videos.length;
+
+    var list = videos.slice().sort(function (a, b) {
+      var ka = a.tripDate || a.added || "";
+      var kb = b.tripDate || b.added || "";
+      return sortNewest ? (ka < kb ? 1 : -1) : (ka > kb ? 1 : -1);
+    });
+
+    var shown = 0;
+    list.forEach(function (v) {
+      if (q && (v.title + " " + (v.place || "") + " " + (v.memo || "")).toLowerCase().indexOf(q) < 0) return;
+      shown++;
+      var idx = videos.indexOf(v);
+
+      var card = document.createElement("div");
+      card.className = "card";
+      card.setAttribute("role", "listitem");
+
+      var th = document.createElement("button");
+      th.className = "thumb";
+      th.type = "button";
+      th.setAttribute("aria-label", v.title + " 재생");
+      var img = document.createElement("img");
+      img.src = "https://i.ytimg.com/vi/" + v.id + "/hqdefault.jpg";
+      img.alt = "";
+      img.loading = "lazy";
+      th.appendChild(img);
+      var pl = document.createElement("div");
+      pl.className = "play";
+      pl.innerHTML = "<span>▶</span>";
+      th.appendChild(pl);
+      th.addEventListener("click", function () { openPlayer(v); });
+
+      var body = document.createElement("div");
+      body.className = "body";
+      if (v.place) {
+        var p = document.createElement("span");
+        p.className = "place";
+        p.textContent = "📍 " + v.place;
+        body.appendChild(p);
+      }
+      var t = document.createElement("div");
+      t.className = "title";
+      t.textContent = v.title;
+      body.appendChild(t);
+      if (v.memo) {
+        var mm = document.createElement("div");
+        mm.className = "memo";
+        mm.textContent = v.memo;
+        body.appendChild(mm);
+      }
+
+      var foot = document.createElement("div");
+      foot.className = "foot";
+      var dt = document.createElement("span");
+      dt.className = "date";
+      dt.textContent = v.tripDate ? v.tripDate.replace(/-/g, ".") : "";
+      foot.appendChild(dt);
+      var acts = document.createElement("div");
+      acts.className = "acts";
+      var eb = document.createElement("button");
+      eb.textContent = "수정";
+      eb.addEventListener("click", function () { openEdit(idx); });
+      var db = document.createElement("button");
+      db.textContent = "삭제";
+      db.addEventListener("click", function () {
+        if (confirm('"' + v.title + '" 카드를 삭제할까요?')) {
+          videos.splice(idx, 1); save(); render();
+        }
+      });
+      acts.appendChild(eb);
+      acts.appendChild(db);
+      foot.appendChild(acts);
+      body.appendChild(foot);
+
+      card.appendChild(th);
+      card.appendChild(body);
+      grid.appendChild(card);
+    });
+
+    if (shown === 0) {
+      var em = document.createElement("div");
+      em.id = "empty";
+      em.innerHTML = q
+        ? '"' + $("search").value.trim() + '" 검색 결과가 없습니다.'
+        : "아직 보관한 영상이 없습니다.<br>위에 <b>유튜브 링크를 붙여넣고 추가</b>를 눌러보세요.<br>제목과 썸네일은 자동으로 가져옵니다.";
+      grid.appendChild(em);
+    }
+  }
+
+  // ---------- 추가 ----------
+  function addVideo() {
+    var url = $("linkInput").value.trim();
+    if (!url) return;
+    var id = parseId(url);
+    if (!id) { msg("유튜브 링크가 아닌 것 같습니다. youtube.com 또는 youtu.be 주소를 붙여넣어 주세요."); return; }
+    if (videos.some(function (v) { return v.id === id; })) { msg("이미 보관함에 있는 영상입니다."); return; }
+    msg("");
+    $("addBtn").disabled = true;
+    $("addBtn").textContent = "가져오는 중…";
+
+    var item = {
+      id: id,
+      title: "제목 불러오는 중…",
+      place: "", memo: "", tripDate: "",
+      added: new Date().toISOString().slice(0, 10)
+    };
+
+    fetch("https://noembed.com/embed?url=" + encodeURIComponent("https://www.youtube.com/watch?v=" + id))
+      .then(function (r) { return r.json(); })
+      .then(function (d) { item.title = d.title || "제목 없음 (직접 입력)"; })
+      .catch(function () { item.title = "제목 없음 (직접 입력)"; })
+      .then(function () {
+        videos.push(item);
+        save();
+        $("linkInput").value = "";
+        $("addBtn").disabled = false;
+        $("addBtn").textContent = "추가";
+        render();
+        openEdit(videos.length - 1); // 바로 여행지·날짜 입력
+      });
+  }
+  $("addBtn").addEventListener("click", addVideo);
+  $("linkInput").addEventListener("keydown", function (e) { if (e.key === "Enter") addVideo(); });
+
+  // ---------- 재생 ----------
+  function openPlayer(v) {
+    $("playerFrame").src = "https://www.youtube-nocookie.com/embed/" + v.id + "?autoplay=1";
+    $("pTitle").textContent = v.title;
+    $("pYoutube").href = "https://www.youtube.com/watch?v=" + v.id;
+    $("playerOverlay").classList.add("on");
+  }
+  function closePlayer() {
+    $("playerOverlay").classList.remove("on");
+    $("playerFrame").src = "about:blank";
+  }
+  $("pClose").addEventListener("click", closePlayer);
+  $("playerOverlay").addEventListener("click", function (e) { if (e.target === this) closePlayer(); });
+
+  // ---------- 수정 ----------
+  var editIdx = -1;
+  function openEdit(idx) {
+    editIdx = idx;
+    var v = videos[idx];
+    $("eTitle").value = v.title;
+    $("ePlace").value = v.place || "";
+    $("eDate").value = v.tripDate || "";
+    $("eMemo").value = v.memo || "";
+    $("editOverlay").classList.add("on");
+    $("ePlace").focus();
+  }
+  function closeEdit() { $("editOverlay").classList.remove("on"); }
+  $("eSave").addEventListener("click", function () {
+    if (editIdx < 0) return;
+    var v = videos[editIdx];
+    v.title = $("eTitle").value.trim() || v.title;
+    v.place = $("ePlace").value.trim();
+    v.tripDate = $("eDate").value;
+    v.memo = $("eMemo").value.trim();
+    save(); closeEdit(); render();
+  });
+  $("eCancel").addEventListener("click", closeEdit);
+  $("editOverlay").addEventListener("click", function (e) { if (e.target === this) closeEdit(); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape") return;
+    if ($("editOverlay").classList.contains("on")) closeEdit();
+    else if ($("playerOverlay").classList.contains("on")) closePlayer();
+  });
+
+  // ---------- 정렬·검색 ----------
+  $("sortBtn").addEventListener("click", function () {
+    sortNewest = !sortNewest;
+    this.textContent = sortNewest ? "최신순" : "오래된순";
+    render();
+  });
+  $("search").addEventListener("input", render);
+
+  // ---------- 백업 ----------
+  $("exportBtn").addEventListener("click", function () {
+    var blob = new Blob([JSON.stringify(videos, null, 2)], { type: "application/json" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "travel-videos-backup.json";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+  $("importBtn").addEventListener("click", function () { $("importFile").click(); });
+  $("importFile").addEventListener("change", function () {
+    var f = this.files[0];
+    if (!f) return;
+    var r = new FileReader();
+    r.onload = function () {
+      try {
+        var data = JSON.parse(r.result);
+        if (!Array.isArray(data)) throw 0;
+        videos = data.filter(function (v) { return v && v.id && v.title; });
+        save(); render();
+      } catch (e) { alert("백업 파일 형식이 올바르지 않습니다."); }
+    };
+    r.readAsText(f);
+    this.value = "";
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
