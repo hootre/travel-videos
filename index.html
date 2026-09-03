@@ -792,7 +792,15 @@
     .then(function (r) { return r.ok ? r.json() : []; })
     .then(function (d) { if (Array.isArray(d)) sharedList = d; })
     .catch(function () {})
-    .then(function () { mergeLists(); render(); });
+    .then(function () {
+      mergeLists(); render();
+      // ?export=1 로 열면 이 브라우저의 병합 목록을 URL 해시에 실어줌 (마이그레이션용, 서버로 전송되지 않음)
+      if (location.search.indexOf("export=1") >= 0) {
+        try {
+          location.hash = "data=" + btoa(unescape(encodeURIComponent(JSON.stringify(videos))));
+        } catch (e) {}
+      }
+    });
 })();
 </script>
 </body>
