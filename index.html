@@ -419,6 +419,15 @@
 
   <div id="filters"></div>
 
+  <div id="syncBanner" style="display:none; margin-bottom:14px; padding:13px 15px; border:1px solid var(--accent-deep); border-radius:var(--radius); background:rgba(255,126,95,.07); font-size:13px; line-height:1.6;">
+    <b>이 기기에만 저장된 영상 <span id="syncCount">0</span>개</b>가 있습니다.
+    모든 기기·모든 사람에게 보이게 하려면 아래 버튼으로 목록 코드를 복사해 관리자에게 보내주세요.
+    <div style="margin-top:8px;">
+      <button id="syncCopy" style="height:36px; padding:0 16px; border-radius:10px; border:none; background:var(--accent); color:#1C0F0A; font-weight:700; font-size:13px; cursor:pointer; font-family:inherit;">목록 코드 복사</button>
+      <span id="syncMsg" style="color:var(--muted); margin-left:8px;"></span>
+    </div>
+  </div>
+
   <div id="grid" role="list"></div>
 
   <footer>
@@ -800,7 +809,23 @@
           location.hash = "data=" + btoa(unescape(encodeURIComponent(JSON.stringify(videos))));
         } catch (e) {}
       }
+      // 이 기기에만 있는 항목이 있으면 공용 반영 안내 배너 표시
+      var localOnly = videos.filter(function (v) {
+        return !sharedList.some(function (s) { return s.id === v.id; });
+      });
+      if (localOnly.length > 0) {
+        $("syncCount").textContent = localOnly.length;
+        $("syncBanner").style.display = "block";
+      }
     });
+  $("syncCopy").addEventListener("click", function () {
+    var code = JSON.stringify(videos, null, 2);
+    function ok() { $("syncMsg").textContent = "복사됨! 관리자에게 붙여넣어 주세요."; }
+    function fail() { prompt("아래 코드를 전체 선택해 복사하세요", code); }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(code).then(ok, fail);
+    } else { fail(); }
+  });
 })();
 </script>
 </body>
