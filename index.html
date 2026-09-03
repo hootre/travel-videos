@@ -80,7 +80,40 @@
   #addBtn:disabled { opacity: .5; cursor: default; }
   #addMsg { font-size: 13px; color: var(--danger); margin: 0 0 12px 4px; display: none; }
 
-  .tools { display: flex; gap: 8px; margin-bottom: 18px; }
+  .tools { display: flex; gap: 8px; margin-bottom: 12px; }
+
+  /* 필터 칩 */
+  #filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 18px;
+  }
+  #filters:empty { display: none; }
+  .chip {
+    height: 32px;
+    padding: 0 13px;
+    border-radius: 16px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--muted);
+    font-size: 12.5px;
+    cursor: pointer;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: border-color .1s, color .1s;
+  }
+  .chip:hover { color: var(--ink); border-color: #38445A; }
+  .chip.on {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #1C0F0A;
+    font-weight: 700;
+  }
+  .chip.year { border-style: dashed; }
+  .chip.year.on { border-style: solid; }
   #search {
     flex: 1;
     height: 42px;
@@ -384,6 +417,8 @@
     <button id="sortBtn" title="정렬 바꾸기">최신순</button>
   </div>
 
+  <div id="filters"></div>
+
   <div id="grid" role="list"></div>
 
   <footer>
@@ -439,13 +474,50 @@
   var $ = function (id) { return document.getElementById(id); };
   var KEY = "travel.videos.v1";
 
-  var videos = [];
-  try {
-    var saved = JSON.parse(localStorage.getItem(KEY));
-    if (Array.isArray(saved)) videos = saved;
-  } catch (e) {}
+  var DELKEY = "travel.videos.deleted.v1";
 
-  function save() { try { localStorage.setItem(KEY, JSON.stringify(videos)); } catch (e) {} }
+  // 공용 목록(videos.json, 저장소에 커밋됨) + 이 브라우저의 변경분(localStorage)을 합쳐서 보여줌
+  var sharedList = [];   // videos.json 원본
+  var videos = [];       // 화면에 쓰는 병합 목록
+
+  function loadLocal(key) {
+    try {
+      var v = JSON.parse(localStorage.getItem(key));
+      if (Array.isArray(v)) return v;
+    } catch (e) {}
+    return [];
+  }
+
+  function mergeLists() {
+    var overlay = loadLocal(KEY);
+    var deleted = loadLocal(DELKEY);
+    var byId = {};
+    overlay.forEach(function (v) { if (v && v.id) byId[v.id] = v; });
+    videos = [];
+    sharedList.forEach(function (s) {
+      if (deleted.indexOf(s.id) >= 0) return;
+      videos.push(byId[s.id] || s);
+      delete byId[s.id];
+    });
+    overlay.forEach(function (v) {
+      if (v && v.id && byId[v.id]) videos.push(v);
+    });
+  }
+
+  function save() {
+    try {
+      var sharedJson = {};
+      sharedList.forEach(function (s) { sharedJson[s.id] = JSON.stringify(s); });
+      // 공용 목록과 다른 항목(수정본·새 항목)만 이 브라우저에 저장
+      var overlay = videos.filter(function (v) { return sharedJson[v.id] !== JSON.stringify(v); });
+      // 공용 목록에 있지만 화면 목록에서 지운 것 = 이 브라우저에서의 삭제
+      var deleted = sharedList.filter(function (s) {
+        return !videos.some(function (v) { return v.id === s.id; });
+      }).map(function (s) { return s.id; });
+      localStorage.setItem(KEY, JSON.stringify(overlay));
+      localStorage.setItem(DELKEY, JSON.stringify(deleted));
+    } catch (e) {}
+  }
 
   function parseId(url) {
     var m = url.match(/(?:youtube\.com\/(?:watch\?[^#]*v=|shorts\/|embed\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
@@ -453,6 +525,49 @@
   }
 
   var sortNewest = true;
+  var filterPlace = "";
+  var filterYear = "";
+
+  function yearOf(v) {
+    var d = v.tripDate || v.added || "";
+    return d.slice(0, 4);
+  }
+
+  function buildFilters() {
+    var box = $("filters");
+    box.innerHTML = "";
+    var places = [], years = [];
+    videos.forEach(function (v) {
+      if (v.place && places.indexOf(v.place) < 0) places.push(v.place);
+      var y = yearOf(v);
+      if (y && years.indexOf(y) < 0) years.push(y);
+    });
+    places.sort();
+    years.sort().reverse();
+    if (places.length < 2 && years.length < 2) return; // 필터할 게 없으면 숨김
+
+    function chip(label, cls, on, fn) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "chip" + (cls ? " " + cls : "") + (on ? " on" : "");
+      b.textContent = label;
+      b.addEventListener("click", fn);
+      box.appendChild(b);
+    }
+    chip("전체", "", !filterPlace && !filterYear, function () {
+      filterPlace = ""; filterYear = ""; render();
+    });
+    places.forEach(function (p) {
+      chip("📍 " + p, "", filterPlace === p, function () {
+        filterPlace = filterPlace === p ? "" : p; render();
+      });
+    });
+    years.forEach(function (y) {
+      chip(y, "year", filterYear === y, function () {
+        filterYear = filterYear === y ? "" : y; render();
+      });
+    });
+  }
 
   function msg(t) {
     var el = $("addMsg");
@@ -465,6 +580,7 @@
     var grid = $("grid");
     grid.innerHTML = "";
     $("count").textContent = videos.length;
+    buildFilters();
 
     var list = videos.slice().sort(function (a, b) {
       var ka = a.tripDate || a.added || "";
@@ -475,6 +591,8 @@
     var shown = 0;
     list.forEach(function (v) {
       if (q && (v.title + " " + (v.place || "") + " " + (v.memo || "")).toLowerCase().indexOf(q) < 0) return;
+      if (filterPlace && v.place !== filterPlace) return;
+      if (filterYear && yearOf(v) !== filterYear) return;
       shown++;
       var idx = videos.indexOf(v);
 
@@ -547,8 +665,8 @@
     if (shown === 0) {
       var em = document.createElement("div");
       em.id = "empty";
-      em.innerHTML = q
-        ? '"' + $("search").value.trim() + '" 검색 결과가 없습니다.'
+      em.innerHTML = (q || filterPlace || filterYear)
+        ? "조건에 맞는 영상이 없습니다."
         : "아직 보관한 영상이 없습니다.<br>위에 <b>유튜브 링크를 붙여넣고 추가</b>를 눌러보세요.<br>제목과 썸네일은 자동으로 가져옵니다.";
       grid.appendChild(em);
     }
@@ -667,7 +785,14 @@
     this.value = "";
   });
 
-  render();
+  // ---------- 시작: 공용 목록 로드 후 렌더 ----------
+  mergeLists();
+  render(); // 우선 로컬 데이터로 표시
+  fetch("videos.json?v=" + Date.now())
+    .then(function (r) { return r.ok ? r.json() : []; })
+    .then(function (d) { if (Array.isArray(d)) sharedList = d; })
+    .catch(function () {})
+    .then(function () { mergeLists(); render(); });
 })();
 </script>
 </body>
