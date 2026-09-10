@@ -197,6 +197,115 @@
   }
   .thumb:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 
+  .body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 7px; flex: 1; }
+  .place {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .title {
+    font-size: 14.5px;
+    font-weight: 700;
+    line-height: 1.45;
+    letter-spacing: -0.01em;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  .memo {
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.5;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  .foot {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-top: 6px;
+  }
+  .date { font-size: 11.5px; color: #57617A; font-variant-numeric: tabular-nums; }
+  .foot .acts { display: flex; gap: 2px; }
+  .foot button {
+    background: none;
+    border: none;
+    color: #57617A;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 6px;
+    font-family: inherit;
+  }
+  .foot button:hover { color: var(--ink); background: var(--panel-2); }
+
+  #empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: var(--muted);
+    padding: 60px 20px;
+    font-size: 14.5px;
+    line-height: 1.8;
+    border: 1px dashed var(--line);
+    border-radius: var(--radius);
+  }
+  #empty b { color: var(--ink); }
+
+  /* 재생 모달 */
+  #playerOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(6, 8, 11, .92);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+    padding: 20px;
+  }
+  #playerOverlay.on { display: flex; }
+  #playerBox {
+    width: 100%;
+    max-width: 900px;
+  }
+  #playerBox .frame {
+    aspect-ratio: 16 / 9;
+    background: #000;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  #playerBox iframe { width: 100%; height: 100%; border: 0; display: block; }
+  #playerBox .pmeta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  #pTitle { font-size: 15px; font-weight: 700; }
+  #playerBox .pmeta .btns { display: flex; gap: 8px; flex: none; }
+  #playerBox .pmeta button, #playerBox .pmeta a {
+    height: 40px;
+    padding: 0 16px;
+    display: inline-flex;
+    align-items: center;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--ink);
+    font-size: 13.5px;
+    cursor: pointer;
+    font-family: inherit;
+    text-decoration: none;
+  }
+
   /* 수정 모달 */
   #editOverlay {
     position: fixed;
