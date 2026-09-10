@@ -196,6 +196,104 @@
     padding-left: 4px;
   }
   .thumb:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+  /* 퀴즈로 잠긴 카드 */
+  .thumb.locked img { filter: blur(14px) saturate(.5) brightness(.55); transform: scale(1.1); }
+  .thumb.locked .play { background: rgba(10, 12, 16, .45); }
+  .thumb.locked .play span {
+    border-color: rgba(255, 255, 255, .4);
+    padding-left: 0;
+    font-size: 20px;
+  }
+  .lockTag {
+    position: absolute;
+    top: 8px; left: 8px;
+    background: rgba(10, 12, 16, .8);
+    border: 1px solid rgba(255, 255, 255, .18);
+    color: #FFD9CC;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 8px;
+  }
+  .solvedTag {
+    position: absolute;
+    top: 8px; left: 8px;
+    background: rgba(10, 12, 16, .7);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 8px;
+  }
+
+  /* 퀴즈 모달 */
+  #quizOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(6, 8, 11, .86);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 40;
+    padding: 20px;
+  }
+  #quizOverlay.on { display: flex; }
+  #quizBox {
+    width: 100%;
+    max-width: 460px;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 26px 22px 22px;
+  }
+  #quizBox.shake { animation: shake .4s; }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-9px); }
+    40% { transform: translateX(9px); }
+    60% { transform: translateX(-5px); }
+    80% { transform: translateX(5px); }
+  }
+  #quizBox .qmark { font-size: 26px; }
+  #quizVideoTitle { font-size: 12.5px; color: var(--muted); margin: 8px 0 2px; }
+  #quizQ { font-size: 18px; font-weight: 800; line-height: 1.5; margin: 4px 0 16px; letter-spacing: -0.01em; }
+  #quizA {
+    width: 100%;
+    height: 52px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--ink);
+    padding: 0 16px;
+    font-size: 16px;
+    font-family: inherit;
+    outline: none;
+  }
+  #quizA:focus { border-color: var(--accent); }
+  #quizMsg { font-size: 13px; margin: 10px 2px 0; min-height: 18px; line-height: 1.5; }
+  #quizMsg.bad { color: var(--danger); }
+  #quizMsg.hint { color: var(--accent); }
+  #quizBox .btns { display: flex; gap: 10px; margin-top: 16px; }
+  #quizBox .btns button {
+    height: 50px;
+    border-radius: 12px;
+    font-size: 15.5px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--muted);
+    flex: none;
+    padding: 0 16px;
+  }
+  #quizBox .btns #qSubmit {
+    flex: 1;
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #1C0F0A;
+  }
   .body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 7px; flex: 1; }
   .place {
     display: inline-flex;
@@ -370,6 +468,14 @@
     border-color: var(--accent);
     color: #1C0F0A;
   }
+  .quizFields {
+    border-top: 1px solid var(--line);
+    padding-top: 13px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  #eQNote { margin: 0; font-size: 11.5px; color: var(--muted); line-height: 1.6; }
 
   footer {
     margin-top: 30px;
@@ -433,6 +539,7 @@
   <footer>
     <button id="exportBtn">백업 내보내기</button>
     <button id="importBtn">가져오기</button>
+    <button id="relockBtn">퀴즈 다시 잠그기</button>
     <input id="importFile" type="file" accept="application/json" hidden>
   </footer>
 </div>
@@ -446,6 +553,21 @@
         <a id="pYoutube" href="#" target="_blank" rel="noopener">유튜브에서 열기</a>
         <button id="pClose">닫기</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<div id="quizOverlay">
+  <div id="quizBox" role="dialog" aria-modal="true">
+    <div class="qmark">🔒</div>
+    <div id="quizVideoTitle"></div>
+    <div id="quizQ"></div>
+    <input id="quizA" placeholder="정답 입력" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <div id="quizMsg"></div>
+    <div class="btns">
+      <button type="button" id="qSubmit">확인</button>
+      <button type="button" id="qHint">힌트</button>
+      <button type="button" id="qCancel">닫기</button>
     </div>
   </div>
 </div>
@@ -471,6 +593,25 @@
       <label for="eMemo">메모</label>
       <input id="eMemo" placeholder="같이 간 사람, 기억나는 순간…">
     </div>
+
+    <div class="quizFields">
+      <div class="field">
+        <label for="eQ">🔒 재생 전 질문 <span style="text-transform:none;letter-spacing:0">(비워두면 잠금 없음)</span></label>
+        <input id="eQ" placeholder="예: 이날 우리가 먹은 야식은?">
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="eA">정답 <span style="text-transform:none;letter-spacing:0">(쉼표로 여러 개)</span></label>
+          <input id="eA" placeholder="예: 마라탕, 마라샹궈">
+        </div>
+        <div class="field">
+          <label for="eHint">힌트</label>
+          <input id="eHint" placeholder="선택 입력">
+        </div>
+      </div>
+      <p id="eQNote">정답은 암호화(해시)되어 저장돼서 페이지 소스에 그대로 보이지 않습니다. 띄어쓰기·대소문자는 무시하고 채점합니다.</p>
+    </div>
+
     <div class="btns">
       <button type="button" id="eCancel">취소</button>
       <button type="button" class="save" id="eSave">저장</button>
@@ -484,6 +625,46 @@
   var KEY = "travel.videos.v1";
 
   var DELKEY = "travel.videos.deleted.v1";
+  var PASSKEY = "travel.videos.passed.v1";
+
+  // ---------- 퀴즈 잠금 ----------
+  // 정답은 해시로만 저장한다(소스에 평문이 남지 않게).
+  function normAnswer(s) {
+    return String(s || "")
+      .normalize("NFC")
+      .toLowerCase()
+      .replace(/\s+/g, "")
+      .replace(/[.,!?~·・"'’”…\-_/\\()[\]{}]/g, "");
+  }
+
+  function sha256Hex(str) {
+    if (window.crypto && crypto.subtle) {
+      return crypto.subtle.digest("SHA-256", new TextEncoder().encode(str))
+        .then(function (buf) {
+          return Array.prototype.map.call(new Uint8Array(buf), function (b) {
+            return b.toString(16).padStart(2, "0");
+          }).join("");
+        });
+    }
+    // http:// 등 보안 컨텍스트가 아니면 해시 불가 → 평문 비교로 폴백
+    return Promise.resolve("plain:" + str);
+  }
+
+  function hashAnswers(csv) {
+    var list = String(csv || "").split(",").map(normAnswer).filter(Boolean);
+    return Promise.all(list.map(sha256Hex));
+  }
+
+  var passed = [];
+  try {
+    var pv = JSON.parse(localStorage.getItem(PASSKEY));
+    if (Array.isArray(pv)) passed = pv;
+  } catch (e) {}
+  function savePassed() {
+    try { localStorage.setItem(PASSKEY, JSON.stringify(passed)); } catch (e) {}
+  }
+  function hasQuiz(v) { return !!(v.q && ((v.aHash && v.aHash.length) || v.a)); }
+  function isLocked(v) { return hasQuiz(v) && passed.indexOf(v.id) < 0; }
 
   // 공용 목록(videos.json, 저장소에 커밋됨) + 이 브라우저의 변경분(localStorage)을 합쳐서 보여줌
   var sharedList = [];   // videos.json 원본
@@ -505,7 +686,9 @@
     videos = [];
     sharedList.forEach(function (s) {
       if (deleted.indexOf(s.id) >= 0) return;
-      videos.push(byId[s.id] || s);
+      // 공용 항목은 복사본을 넣는다. 원본을 그대로 넣으면 수정 시 sharedList까지
+      // 같이 바뀌어 "변경 없음"으로 판정되고 저장이 되지 않는다.
+      videos.push(byId[s.id] || JSON.parse(JSON.stringify(s)));
       delete byId[s.id];
     });
     overlay.forEach(function (v) {
@@ -609,10 +792,11 @@
       card.className = "card";
       card.setAttribute("role", "listitem");
 
+      var locked = isLocked(v);
       var th = document.createElement("button");
-      th.className = "thumb";
+      th.className = "thumb" + (locked ? " locked" : "");
       th.type = "button";
-      th.setAttribute("aria-label", v.title + " 재생");
+      th.setAttribute("aria-label", v.title + (locked ? " — 잠김, 질문에 답하면 재생" : " 재생"));
       var img = document.createElement("img");
       img.src = "https://i.ytimg.com/vi/" + v.id + "/hqdefault.jpg";
       img.alt = "";
@@ -620,9 +804,17 @@
       th.appendChild(img);
       var pl = document.createElement("div");
       pl.className = "play";
-      pl.innerHTML = "<span>▶</span>";
+      pl.innerHTML = locked ? "<span>🔒</span>" : "<span>▶</span>";
       th.appendChild(pl);
-      th.addEventListener("click", function () { openPlayer(v); });
+      if (hasQuiz(v)) {
+        var tag = document.createElement("span");
+        tag.className = locked ? "lockTag" : "solvedTag";
+        tag.textContent = locked ? "🔒 퀴즈" : "✓ 열림";
+        th.appendChild(tag);
+      }
+      th.addEventListener("click", function () {
+        if (isLocked(v)) openQuiz(v); else openPlayer(v);
+      });
 
       var body = document.createElement("div");
       body.className = "body";
@@ -716,8 +908,72 @@
   $("addBtn").addEventListener("click", addVideo);
   $("linkInput").addEventListener("keydown", function (e) { if (e.key === "Enter") addVideo(); });
 
+  // ---------- 퀴즈 ----------
+  var quizVideo = null, tries = 0;
+
+  function openQuiz(v) {
+    quizVideo = v;
+    tries = 0;
+    $("quizVideoTitle").textContent = v.title;
+    $("quizQ").textContent = v.q;
+    $("quizA").value = "";
+    $("quizMsg").textContent = "";
+    $("quizMsg").className = "";
+    $("qHint").style.display = v.hint ? "" : "none";
+    $("quizOverlay").classList.add("on");
+    setTimeout(function () { $("quizA").focus(); }, 50);
+  }
+
+  function closeQuiz() {
+    $("quizOverlay").classList.remove("on");
+    quizVideo = null;
+  }
+
+  function checkAnswer() {
+    if (!quizVideo) return;
+    var v = quizVideo;
+    var input = normAnswer($("quizA").value);
+    if (!input) return;
+
+    sha256Hex(input).then(function (h) {
+      var ok = false;
+      if (v.aHash && v.aHash.length) ok = v.aHash.indexOf(h) >= 0;
+      if (!ok && v.a) {
+        // 평문 정답(구버전 데이터)도 지원
+        ok = String(v.a).split(",").map(normAnswer).filter(Boolean).indexOf(input) >= 0;
+      }
+
+      if (ok) {
+        if (passed.indexOf(v.id) < 0) { passed.push(v.id); savePassed(); }
+        $("quizMsg").className = "hint";
+        $("quizMsg").textContent = "정답입니다! 영상을 재생합니다 🎉";
+        setTimeout(function () { closeQuiz(); render(); openPlayer(v); }, 550);
+      } else {
+        tries++;
+        $("quizBox").classList.remove("shake");
+        void $("quizBox").offsetWidth;
+        $("quizBox").classList.add("shake");
+        $("quizMsg").className = "bad";
+        $("quizMsg").textContent = "땡! 다시 생각해 보세요. (" + tries + "번째 시도)" +
+          (tries >= 3 && v.hint ? " — 힌트 버튼을 눌러보세요." : "");
+        $("quizA").select();
+      }
+    });
+  }
+
+  $("qSubmit").addEventListener("click", checkAnswer);
+  $("quizA").addEventListener("keydown", function (e) { if (e.key === "Enter") checkAnswer(); });
+  $("qCancel").addEventListener("click", closeQuiz);
+  $("qHint").addEventListener("click", function () {
+    if (!quizVideo || !quizVideo.hint) return;
+    $("quizMsg").className = "hint";
+    $("quizMsg").textContent = "💡 " + quizVideo.hint;
+  });
+  $("quizOverlay").addEventListener("click", function (e) { if (e.target === this) closeQuiz(); });
+
   // ---------- 재생 ----------
   function openPlayer(v) {
+    if (isLocked(v)) { openQuiz(v); return; }
     $("playerFrame").src = "https://www.youtube-nocookie.com/embed/" + v.id + "?autoplay=1";
     $("pTitle").textContent = v.title;
     $("pYoutube").href = "https://www.youtube.com/watch?v=" + v.id;
@@ -739,6 +995,13 @@
     $("ePlace").value = v.place || "";
     $("eDate").value = v.tripDate || "";
     $("eMemo").value = v.memo || "";
+    $("eQ").value = v.q || "";
+    $("eHint").value = v.hint || "";
+    // 저장된 정답은 해시라 되돌릴 수 없음 → 빈칸 + 안내
+    $("eA").value = v.a || "";
+    $("eA").placeholder = (v.aHash && v.aHash.length)
+      ? "정답 " + v.aHash.length + "개 저장됨 (바꿀 때만 새로 입력)"
+      : "예: 마라탕, 마라샹궈";
     $("editOverlay").classList.add("on");
     $("ePlace").focus();
   }
@@ -750,13 +1013,46 @@
     v.place = $("ePlace").value.trim();
     v.tripDate = $("eDate").value;
     v.memo = $("eMemo").value.trim();
-    save(); closeEdit(); render();
+
+    var q = $("eQ").value.trim();
+    var aRaw = $("eA").value.trim();
+    var hint = $("eHint").value.trim();
+
+    var finish = function () {
+      // 질문이 지워지면 잠금 해제 상태 기록도 정리
+      if (!hasQuiz(v)) {
+        var pi = passed.indexOf(v.id);
+        if (pi >= 0) { passed.splice(pi, 1); savePassed(); }
+      }
+      save(); closeEdit(); render();
+    };
+
+    if (!q) {
+      delete v.q; delete v.aHash; delete v.a; delete v.hint;
+      finish();
+      return;
+    }
+
+    v.q = q;
+    if (hint) v.hint = hint; else delete v.hint;
+
+    if (aRaw) {
+      hashAnswers(aRaw).then(function (hashes) {
+        if (hashes.length) { v.aHash = hashes; delete v.a; }
+        // 문제를 낸 사람은 굳이 자기 퀴즈를 다시 풀 필요 없음
+        if (passed.indexOf(v.id) < 0) { passed.push(v.id); savePassed(); }
+        finish();
+      });
+    } else {
+      finish();
+    }
   });
   $("eCancel").addEventListener("click", closeEdit);
   $("editOverlay").addEventListener("click", function (e) { if (e.target === this) closeEdit(); });
   document.addEventListener("keydown", function (e) {
     if (e.key !== "Escape") return;
     if ($("editOverlay").classList.contains("on")) closeEdit();
+    else if ($("quizOverlay").classList.contains("on")) closeQuiz();
     else if ($("playerOverlay").classList.contains("on")) closePlayer();
   });
 
@@ -767,6 +1063,13 @@
     render();
   });
   $("search").addEventListener("input", render);
+
+  $("relockBtn").addEventListener("click", function () {
+    if (!passed.length) { alert("지금 열려 있는 퀴즈 영상이 없습니다."); return; }
+    if (confirm("풀었던 퀴즈 " + passed.length + "개를 다시 잠글까요?\n(다음에 재생하려면 정답을 다시 맞혀야 합니다)")) {
+      passed = []; savePassed(); render();
+    }
+  });
 
   // ---------- 백업 ----------
   $("exportBtn").addEventListener("click", function () {
