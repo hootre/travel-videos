@@ -495,6 +495,106 @@
   }
   footer button:hover { color: var(--muted); }
 
+  /* 관리자 */
+  header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  #adminBtn {
+    flex: none;
+    height: 34px;
+    padding: 0 13px;
+    border-radius: 17px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--muted);
+    font-size: 12.5px;
+    cursor: pointer;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  #adminBtn:hover { color: var(--ink); border-color: #38445A; }
+  body.admin #adminBtn {
+    color: var(--accent);
+    border-color: var(--accent-deep);
+    background: rgba(255, 126, 95, .08);
+  }
+  /* 관리자 전용 UI — 기본은 숨김 */
+  #addBar, #addMsg, #syncBanner, .adminOnly { display: none !important; }
+  body.admin #addBar { display: flex !important; }
+  body.admin .adminOnly { display: inline-flex !important; }
+  body.admin #syncBanner.show { display: block !important; }
+
+  /* 숨김 처리된 영상 (관리자에게만 보임) */
+  .card.hidden { opacity: .55; border-style: dashed; }
+  .card.hidden .thumb img { filter: grayscale(.7); }
+  .hiddenTag {
+    position: absolute;
+    top: 8px; right: 8px;
+    background: rgba(10, 12, 16, .82);
+    border: 1px solid rgba(255, 255, 255, .18);
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 8px;
+  }
+
+  /* 로그인 모달 */
+  #loginOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(6, 8, 11, .86);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    padding: 20px;
+  }
+  #loginOverlay.on { display: flex; }
+  #loginBox {
+    width: 100%;
+    max-width: 380px;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 26px 22px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  #loginBox h2 { margin: 0 0 2px; font-size: 17px; }
+  #loginBox input {
+    height: 48px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--ink);
+    padding: 0 15px;
+    font-size: 15px;
+    font-family: inherit;
+    outline: none;
+  }
+  #loginBox input:focus { border-color: var(--accent-deep); }
+  #loginMsg { font-size: 13px; color: var(--danger); min-height: 17px; margin: 0; }
+  #loginBox .btns { display: flex; gap: 10px; margin-top: 2px; }
+  #loginBox .btns button {
+    flex: 1;
+    height: 48px;
+    border-radius: 12px;
+    font-size: 15.5px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--muted);
+  }
+  #loginBox .btns .go {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #1C0F0A;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .card, .thumb .play { transition: none; }
   }
@@ -507,9 +607,10 @@
       <span class="mark">🧳</span>
       <div>
         <h1>여행 영상함</h1>
-        <p class="sub">유튜브 링크를 붙여넣으면 여행 기록 카드가 됩니다 · <span id="count">0</span>편 보관 중</p>
+        <p class="sub"><span id="subMsg">여행 기록 영상 모음</span> · <span id="count">0</span>편</p>
       </div>
     </div>
+    <button id="adminBtn" type="button" title="관리자 로그인">🔑 <span id="adminLabel">관리자</span></button>
   </header>
 
   <div id="addBar">
@@ -525,9 +626,9 @@
 
   <div id="filters"></div>
 
-  <div id="syncBanner" style="display:none; margin-bottom:14px; padding:13px 15px; border:1px solid var(--accent-deep); border-radius:var(--radius); background:rgba(255,126,95,.07); font-size:13px; line-height:1.6;">
-    <b>이 기기에만 저장된 변경 <span id="syncCount">0</span>건</b>이 있습니다. (새로 추가한 영상, 수정한 정보, 설정한 퀴즈 등)<br>
-    모든 기기·모든 사람에게 반영하려면 아래 버튼으로 목록 코드를 복사해 관리자에게 보내주세요.
+  <div id="syncBanner" style="margin-bottom:14px; padding:13px 15px; border:1px solid var(--accent-deep); border-radius:var(--radius); background:rgba(255,126,95,.07); font-size:13px; line-height:1.6;">
+    <b>이 기기에만 저장된 변경 <span id="syncCount">0</span>건</b>이 있습니다. (새로 추가한 영상, 수정한 정보, 퀴즈, 숨김 설정 등)<br>
+    모든 기기·모든 사람에게 반영하려면 아래 버튼으로 목록 코드를 복사해 저장해 두세요.
     <div style="margin-top:8px;">
       <button id="syncCopy" style="height:36px; padding:0 16px; border-radius:10px; border:none; background:var(--accent); color:#1C0F0A; font-weight:700; font-size:13px; cursor:pointer; font-family:inherit;">목록 코드 복사</button>
       <span id="syncMsg" style="color:var(--muted); margin-left:8px;"></span>
@@ -537,8 +638,8 @@
   <div id="grid" role="list"></div>
 
   <footer>
-    <button id="exportBtn">백업 내보내기</button>
-    <button id="importBtn">가져오기</button>
+    <button id="exportBtn" class="adminOnly">백업 내보내기</button>
+    <button id="importBtn" class="adminOnly">가져오기</button>
     <button id="relockBtn">퀴즈 다시 잠그기</button>
     <input id="importFile" type="file" accept="application/json" hidden>
   </footer>
@@ -553,6 +654,19 @@
         <a id="pYoutube" href="#" target="_blank" rel="noopener">유튜브에서 열기</a>
         <button id="pClose">닫기</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<div id="loginOverlay">
+  <div id="loginBox" role="dialog" aria-modal="true">
+    <h2>🔑 관리자 로그인</h2>
+    <input id="loginId" placeholder="아이디" autocomplete="username" autocapitalize="off" spellcheck="false">
+    <input id="loginPw" type="password" placeholder="비밀번호" autocomplete="current-password">
+    <p id="loginMsg"></p>
+    <div class="btns">
+      <button type="button" class="go" id="loginGo">로그인</button>
+      <button type="button" id="loginCancel">취소</button>
     </div>
   </div>
 </div>
@@ -626,6 +740,63 @@
 
   var DELKEY = "travel.videos.deleted.v1";
   var PASSKEY = "travel.videos.passed.v1";
+  var ADMINKEY = "travel.admin.v1";
+
+  // ---------- 관리자 ----------
+  // 아이디:비밀번호의 SHA-256 해시만 보관한다 (소스에 평문이 남지 않게).
+  var ADMIN_HASH = "6b96aa0dcd27ed746cf9e20aa084cccd54c46ed22373521f0fdd58b253644c9e";
+  var isAdmin = false;
+  try { isAdmin = localStorage.getItem(ADMINKEY) === ADMIN_HASH; } catch (e) {}
+
+  function applyAdminUI() {
+    document.body.classList.toggle("admin", isAdmin);
+    $("adminLabel").textContent = isAdmin ? "관리자 ✓" : "관리자";
+    $("adminBtn").title = isAdmin ? "로그아웃" : "관리자 로그인";
+    $("subMsg").textContent = isAdmin ? "관리자 모드 — 추가·수정·숨김 가능" : "여행 기록 영상 모음";
+  }
+
+  function openLogin() {
+    $("loginId").value = "";
+    $("loginPw").value = "";
+    $("loginMsg").textContent = "";
+    $("loginOverlay").classList.add("on");
+    setTimeout(function () { $("loginId").focus(); }, 50);
+  }
+  function closeLogin() { $("loginOverlay").classList.remove("on"); }
+
+  function tryLogin() {
+    var id = $("loginId").value.trim();
+    var pw = $("loginPw").value;
+    if (!id || !pw) { $("loginMsg").textContent = "아이디와 비밀번호를 입력하세요."; return; }
+    if (!(window.crypto && crypto.subtle)) {
+      $("loginMsg").textContent = "이 환경에서는 로그인할 수 없습니다 (https 주소로 접속해 주세요).";
+      return;
+    }
+    sha256Hex(id + ":" + pw).then(function (h) {
+      if (h === ADMIN_HASH) {
+        isAdmin = true;
+        try { localStorage.setItem(ADMINKEY, ADMIN_HASH); } catch (e) {}
+        applyAdminUI(); closeLogin(); render(); checkSync();
+      } else {
+        $("loginMsg").textContent = "아이디 또는 비밀번호가 올바르지 않습니다.";
+        $("loginPw").select();
+      }
+    });
+  }
+
+  $("adminBtn").addEventListener("click", function () {
+    if (!isAdmin) { openLogin(); return; }
+    if (confirm("관리자 모드를 끌까요?")) {
+      isAdmin = false;
+      try { localStorage.removeItem(ADMINKEY); } catch (e) {}
+      applyAdminUI(); render(); checkSync();
+    }
+  });
+  $("loginGo").addEventListener("click", tryLogin);
+  $("loginPw").addEventListener("keydown", function (e) { if (e.key === "Enter") tryLogin(); });
+  $("loginId").addEventListener("keydown", function (e) { if (e.key === "Enter") $("loginPw").focus(); });
+  $("loginCancel").addEventListener("click", closeLogin);
+  $("loginOverlay").addEventListener("click", function (e) { if (e.target === this) closeLogin(); });
 
   // ---------- 퀴즈 잠금 ----------
   // 정답은 해시로만 저장한다(소스에 평문이 남지 않게).
@@ -726,11 +897,16 @@
     return d.slice(0, 4);
   }
 
+  // 숨김 영상은 관리자에게만 보인다
+  function visibleVideos() {
+    return isAdmin ? videos : videos.filter(function (v) { return !v.hidden; });
+  }
+
   function buildFilters() {
     var box = $("filters");
     box.innerHTML = "";
     var places = [], years = [];
-    videos.forEach(function (v) {
+    visibleVideos().forEach(function (v) {
       if (v.place && places.indexOf(v.place) < 0) places.push(v.place);
       var y = yearOf(v);
       if (y && years.indexOf(y) < 0) years.push(y);
@@ -772,10 +948,12 @@
     var q = $("search").value.trim().toLowerCase();
     var grid = $("grid");
     grid.innerHTML = "";
-    $("count").textContent = videos.length;
+    var pool = visibleVideos();
+    var hiddenCount = videos.filter(function (v) { return v.hidden; }).length;
+    $("count").textContent = pool.length + (isAdmin && hiddenCount ? " · 숨김 " + hiddenCount : "");
     buildFilters();
 
-    var list = videos.slice().sort(function (a, b) {
+    var list = pool.slice().sort(function (a, b) {
       var ka = a.tripDate || a.added || "";
       var kb = b.tripDate || b.added || "";
       return sortNewest ? (ka < kb ? 1 : -1) : (ka > kb ? 1 : -1);
@@ -790,7 +968,7 @@
       var idx = videos.indexOf(v);
 
       var card = document.createElement("div");
-      card.className = "card";
+      card.className = "card" + (v.hidden ? " hidden" : "");
       card.setAttribute("role", "listitem");
 
       var locked = isLocked(v);
@@ -812,6 +990,12 @@
         tag.className = locked ? "lockTag" : "solvedTag";
         tag.textContent = locked ? "🔒 퀴즈" : "✓ 열림";
         th.appendChild(tag);
+      }
+      if (v.hidden) {
+        var ht = document.createElement("span");
+        ht.className = "hiddenTag";
+        ht.textContent = "🙈 숨김";
+        th.appendChild(ht);
       }
       th.addEventListener("click", function () {
         if (isLocked(v)) openQuiz(v); else openPlayer(v);
@@ -842,21 +1026,31 @@
       dt.className = "date";
       dt.textContent = v.tripDate ? v.tripDate.replace(/-/g, ".") : "";
       foot.appendChild(dt);
-      var acts = document.createElement("div");
-      acts.className = "acts";
-      var eb = document.createElement("button");
-      eb.textContent = "수정";
-      eb.addEventListener("click", function () { openEdit(idx); });
-      var db = document.createElement("button");
-      db.textContent = "삭제";
-      db.addEventListener("click", function () {
-        if (confirm('"' + v.title + '" 카드를 삭제할까요?')) {
-          videos.splice(idx, 1); save(); render();
-        }
-      });
-      acts.appendChild(eb);
-      acts.appendChild(db);
-      foot.appendChild(acts);
+      if (isAdmin) {
+        var acts = document.createElement("div");
+        acts.className = "acts";
+        var eb = document.createElement("button");
+        eb.textContent = "수정";
+        eb.addEventListener("click", function () { openEdit(idx); });
+        var hb = document.createElement("button");
+        hb.textContent = v.hidden ? "보이기" : "숨기기";
+        hb.title = v.hidden ? "다시 모두에게 보이게" : "일반 사용자에게 안 보이게";
+        hb.addEventListener("click", function () {
+          if (v.hidden) delete v.hidden; else v.hidden = true;
+          save(); render();
+        });
+        var db = document.createElement("button");
+        db.textContent = "삭제";
+        db.addEventListener("click", function () {
+          if (confirm('"' + v.title + '" 카드를 삭제할까요?')) {
+            videos.splice(idx, 1); save(); render();
+          }
+        });
+        acts.appendChild(eb);
+        acts.appendChild(hb);
+        acts.appendChild(db);
+        foot.appendChild(acts);
+      }
       body.appendChild(foot);
 
       card.appendChild(th);
@@ -869,7 +1063,9 @@
       em.id = "empty";
       em.innerHTML = (q || filterPlace || filterYear)
         ? "조건에 맞는 영상이 없습니다."
-        : "아직 보관한 영상이 없습니다.<br>위에 <b>유튜브 링크를 붙여넣고 추가</b>를 눌러보세요.<br>제목과 썸네일은 자동으로 가져옵니다.";
+        : (isAdmin
+          ? "아직 보관한 영상이 없습니다.<br>위에 <b>유튜브 링크를 붙여넣고 추가</b>를 눌러보세요.<br>제목과 썸네일은 자동으로 가져옵니다."
+          : "아직 공개된 영상이 없습니다.");
       grid.appendChild(em);
     }
   }
@@ -1052,7 +1248,8 @@
   $("editOverlay").addEventListener("click", function (e) { if (e.target === this) closeEdit(); });
   document.addEventListener("keydown", function (e) {
     if (e.key !== "Escape") return;
-    if ($("editOverlay").classList.contains("on")) closeEdit();
+    if ($("loginOverlay").classList.contains("on")) closeLogin();
+    else if ($("editOverlay").classList.contains("on")) closeEdit();
     else if ($("quizOverlay").classList.contains("on")) closeQuiz();
     else if ($("playerOverlay").classList.contains("on")) closePlayer();
   });
@@ -1099,6 +1296,7 @@
   });
 
   // ---------- 시작: 공용 목록 로드 후 렌더 ----------
+  applyAdminUI();
   mergeLists();
   render(); // 우선 로컬 데이터로 표시
   fetch("videos.json?v=" + Date.now())
@@ -1122,7 +1320,8 @@
     sharedList.forEach(function (s) { sharedJson[s.id] = JSON.stringify(s); });
     var changed = videos.filter(function (v) { return sharedJson[v.id] !== JSON.stringify(v); });
     $("syncCount").textContent = changed.length;
-    $("syncBanner").style.display = changed.length > 0 ? "block" : "none";
+    // 실제 표시 여부는 CSS가 관리자일 때만 허용한다
+    $("syncBanner").classList.toggle("show", changed.length > 0);
   }
   $("syncCopy").addEventListener("click", function () {
     var code = JSON.stringify(videos, null, 2);
