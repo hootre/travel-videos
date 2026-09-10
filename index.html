@@ -519,10 +519,12 @@
     background: rgba(255, 126, 95, .08);
   }
   /* 관리자 전용 UI — 기본은 숨김 */
-  #addBar, #addMsg, #syncBanner, .adminOnly { display: none !important; }
+  #addBar, .adminOnly { display: none !important; }
   body.admin #addBar { display: flex !important; }
   body.admin .adminOnly { display: inline-flex !important; }
-  body.admin #syncBanner.show { display: block !important; }
+  /* 서버 미연결 안내는 관리자 여부와 상관없이 보여준다 */
+  #syncBanner { display: none; }
+  #syncBanner.show { display: block; }
 
   /* 숨김 처리된 영상 (관리자에게만 보임) */
   .card.hidden { opacity: .55; border-style: dashed; }
@@ -702,7 +704,7 @@
       </div>
     </div>
     <div class="headBtns">
-      <button id="cloudPill" type="button" title="온라인 저장 상태"><span class="dot"></span><span id="cloudLabel">로컬만</span></button>
+      <button id="cloudPill" type="button" title="저장 상태"><span class="dot"></span><span id="cloudLabel">연결 중…</span></button>
       <button id="adminBtn" type="button" title="관리자 로그인">🔑 <span id="adminLabel">관리자</span></button>
     </div>
   </header>
@@ -721,12 +723,10 @@
   <div id="filters"></div>
 
   <div id="syncBanner" style="margin-bottom:14px; padding:13px 15px; border:1px solid var(--accent-deep); border-radius:var(--radius); background:rgba(255,126,95,.07); font-size:13px; line-height:1.6;">
-    <b>이 기기에만 저장된 변경 <span id="syncCount">0</span>건</b>이 있습니다. (새로 추가한 영상, 수정한 정보, 퀴즈, 숨김 설정 등)<br>
-    <b style="color:var(--accent)">온라인 저장을 켜면</b> 앞으로는 어느 기기에서 수정해도 자동으로 모두에게 반영됩니다.
+    <b>서버가 아직 연결되지 않았습니다.</b> 지금은 저장된 목록을 <b>읽기 전용</b>으로 보여주는 중입니다.<br>
+    서버를 연결하면 어느 기기에서 수정하든 바로 모두에게 반영됩니다.
     <div style="margin-top:8px;">
-      <button id="syncSetup" style="height:36px; padding:0 16px; border-radius:10px; border:none; background:var(--accent); color:#1C0F0A; font-weight:700; font-size:13px; cursor:pointer; font-family:inherit;">☁️ 온라인 저장 켜기</button>
-      <button id="syncCopy" style="height:36px; padding:0 14px; border-radius:10px; border:1px solid var(--line); background:transparent; color:var(--muted); font-size:13px; cursor:pointer; font-family:inherit; margin-left:6px;">목록 코드 복사</button>
-      <span id="syncMsg" style="color:var(--muted); margin-left:8px;"></span>
+      <button id="syncSetup" style="height:36px; padding:0 16px; border-radius:10px; border:none; background:var(--accent); color:#1C0F0A; font-weight:700; font-size:13px; cursor:pointer; font-family:inherit;">연결 방법 보기</button>
     </div>
   </div>
 
@@ -734,9 +734,7 @@
 
   <footer>
     <button id="exportBtn" class="adminOnly">백업 내보내기</button>
-    <button id="importBtn" class="adminOnly">가져오기</button>
     <button id="relockBtn">퀴즈 다시 잠그기</button>
-    <input id="importFile" type="file" accept="application/json" hidden>
   </footer>
 </div>
 
@@ -755,24 +753,21 @@
 
 <div id="tokenOverlay">
   <div id="tokenBox" role="dialog" aria-modal="true">
-    <h2>☁️ 온라인 저장 설정</h2>
-    <p style="margin:0;font-size:13px;color:var(--muted);line-height:1.7">
-      GitHub 토큰을 한 번 등록해 두면, 이 기기에서 수정한 내용이 <b style="color:var(--ink)">자동으로 온라인에 저장되어 모든 사람에게 반영</b>됩니다.
+    <h2>☁️ 서버 연결 안내</h2>
+    <p style="margin:0;font-size:13px;color:var(--muted);line-height:1.75">
+      이 사이트는 <b style="color:var(--ink)">Supabase</b>(무료 데이터베이스)를 서버로 사용합니다.
+      연결되면 로그인 후 <b style="color:var(--ink)">어느 기기에서 수정하든 즉시 모두에게 반영</b>되고,
+      숨긴 영상은 서버가 직접 막아주기 때문에 일반 방문자는 아예 받아갈 수 없습니다.
     </p>
     <ol>
-      <li><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">토큰 만들기 페이지 열기</a> (GitHub 로그인 필요)</li>
-      <li>Repository access → <b>Only select repositories</b> → <b>travel-videos</b> 선택</li>
-      <li>Permissions → Repository permissions → <b>Contents</b> 를 <b>Read and write</b> 로</li>
-      <li>Generate token 누르고 나온 <b>ghp_… 로 시작하는 값</b>을 아래에 붙여넣기</li>
+      <li><a href="https://supabase.com/dashboard" target="_blank" rel="noopener">supabase.com</a> 에서 무료 가입 후 프로젝트 생성</li>
+      <li><b>Project Settings → API</b> 에서 <b>Project URL</b> 과 <b>anon public</b> 키 복사</li>
+      <li>그 두 값을 전달하면 사이트에 연결해 드립니다 (테이블·권한·기존 13편 이전까지 자동 처리)</li>
     </ol>
-    <input id="tokenInput" placeholder="github_pat_… 또는 ghp_…" autocomplete="off" spellcheck="false">
-    <p id="tokenMsg"></p>
+    <p id="tokenWarn">anon 키는 외부에 공개되어도 되는 값입니다. 실제 수정 권한은 로그인한 관리자에게만 열리도록 서버에서 막습니다.</p>
     <div class="btns">
-      <button type="button" class="go" id="tokenSave">등록하고 확인</button>
-      <button type="button" id="tokenRemove">등록 해제</button>
-      <button type="button" id="tokenCancel">닫기</button>
+      <button type="button" class="go" id="tokenCancel">닫기</button>
     </div>
-    <p id="tokenWarn">⚠️ 토큰은 이 브라우저에만 저장됩니다. 공용 PC에서는 등록하지 마시고, 쓰던 기기를 정리할 땐 GitHub 설정에서 토큰을 삭제해 주세요.</p>
   </div>
 </div>
 
@@ -851,787 +846,576 @@
   </div>
 </div>
 
-<script>
-(function () {
-  var $ = function (id) { return document.getElementById(id); };
-  var KEY = "travel.videos.v1";
+<script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm";
 
-  var DELKEY = "travel.videos.deleted.v1";
-  var PASSKEY = "travel.videos.passed.v1";
-  var ADMINKEY = "travel.admin.v1";
-  var GHKEY = "travel.gh.v1";
+/* ============================================================
+   서버 설정 — Supabase 프로젝트 URL / anon public 키
+   두 값이 비어 있으면 videos.json 읽기 전용 모드로 동작한다.
+   ============================================================ */
+const CONFIG = {
+  url: "",
+  key: ""
+};
 
-  // ---------- 온라인 저장 (GitHub videos.json 직접 커밋) ----------
-  var GH = { owner: "hootre", repo: "travel-videos", path: "videos.json", branch: "main" };
-  var ghToken = "";
-  try { ghToken = localStorage.getItem(GHKEY) || ""; } catch (e) {}
-  var fileSha = null;          // 마지막으로 확인한 videos.json의 blob sha
-  var cloudTimer = null;
-  var cloudBusy = false;
-  var cloudDirty = false;      // 아직 올리지 못한 변경이 있는지
+const $ = (id) => document.getElementById(id);
+const configured = !!(CONFIG.url && CONFIG.key);
+const supa = configured ? createClient(CONFIG.url, CONFIG.key) : null;
 
-  function setCloud(state, text) {
-    var pill = $("cloudPill");
-    pill.className = state;     // "", ok, busy, bad
-    $("cloudLabel").textContent = text;
+let videos = [];
+let isAdmin = false;
+let sortNewest = true;
+let filterPlace = "";
+let filterYear = "";
+
+/* ---------- 저장 상태 표시 ---------- */
+function setCloud(state, text) {
+  $("cloudPill").className = state;
+  $("cloudLabel").textContent = text;
+}
+function idleCloud() {
+  if (!configured) setCloud("bad", "읽기 전용");
+  else if (isAdmin) setCloud("ok", "서버 연결됨");
+  else setCloud("", "온라인");
+}
+
+/* ---------- 행 <-> 화면 데이터 변환 ---------- */
+function fromRow(r) {
+  return {
+    id: r.id,
+    title: r.title || "",
+    place: r.place || "",
+    memo: r.memo || "",
+    tripDate: r.trip_date || "",
+    added: r.added || "",
+    hidden: !!r.hidden,
+    q: r.q || "",
+    aHash: Array.isArray(r.a_hash) ? r.a_hash : [],
+    hint: r.hint || ""
+  };
+}
+function toRow(v) {
+  return {
+    id: v.id,
+    title: v.title || "",
+    place: v.place || "",
+    memo: v.memo || "",
+    trip_date: v.tripDate || "",
+    added: v.added || "",
+    hidden: !!v.hidden,
+    q: v.q || null,
+    a_hash: (v.aHash && v.aHash.length) ? v.aHash : null,
+    hint: v.hint || null
+  };
+}
+
+/* ---------- 데이터 읽기 / 쓰기 ---------- */
+async function loadVideos() {
+  if (!configured) {
+    try {
+      const r = await fetch("videos.json?v=" + Date.now());
+      const d = r.ok ? await r.json() : [];
+      videos = Array.isArray(d) ? d.filter((v) => !v.hidden) : [];
+    } catch (e) { videos = []; }
+    return;
   }
-
-  function refreshCloudPill() {
-    if (!ghToken) { setCloud("", "로컬만"); return; }
-    if (cloudBusy) { setCloud("busy", "저장 중…"); return; }
-    if (cloudDirty) { setCloud("bad", "미저장 — 눌러서 올리기"); return; }
-    setCloud("ok", "온라인 저장됨");
+  const { data, error } = await supa.from("videos").select("*");
+  if (error) {
+    console.error(error);
+    setCloud("bad", "불러오기 실패");
+    return;
   }
+  videos = (data || []).map(fromRow);
+}
 
-  function ghFetch(url, opts) {
-    opts = opts || {};
-    opts.headers = Object.assign({
-      "Authorization": "Bearer " + ghToken,
-      "Accept": "application/vnd.github+json",
-      "X-GitHub-Api-Version": "2022-11-28"
-    }, opts.headers || {});
-    return fetch(url, opts);
+async function saveVideo(v) {
+  if (!configured) { alert("서버가 연결되지 않아 저장할 수 없습니다."); return false; }
+  setCloud("busy", "저장 중…");
+  const { error } = await supa.from("videos").upsert(toRow(v));
+  if (error) {
+    console.error(error);
+    setCloud("bad", "저장 실패");
+    alert("저장하지 못했습니다: " + error.message);
+    return false;
   }
+  idleCloud();
+  return true;
+}
 
-  function contentsUrl() {
-    return "https://api.github.com/repos/" + GH.owner + "/" + GH.repo + "/contents/" + GH.path;
+async function removeVideo(id) {
+  if (!configured) { alert("서버가 연결되지 않아 삭제할 수 없습니다."); return false; }
+  setCloud("busy", "삭제 중…");
+  const { error } = await supa.from("videos").delete().eq("id", id);
+  if (error) {
+    console.error(error);
+    setCloud("bad", "삭제 실패");
+    alert("삭제하지 못했습니다: " + error.message);
+    return false;
   }
+  idleCloud();
+  return true;
+}
 
-  function utf8ToB64(str) {
-    return btoa(String.fromCharCode.apply(null, new TextEncoder().encode(str)));
+/* ---------- 퀴즈 잠금 ---------- */
+const PASSKEY = "travel.videos.passed.v1";
+
+function normAnswer(s) {
+  return String(s || "")
+    .normalize("NFC").toLowerCase()
+    .replace(/\s+/g, "")
+    .replace(/[.,!?~·・"'’”…\-_/\\()[\]{}]/g, "");
+}
+async function sha256Hex(str) {
+  if (!(window.crypto && crypto.subtle)) return "plain:" + str;
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+async function hashAnswers(csv) {
+  const list = String(csv || "").split(",").map(normAnswer).filter(Boolean);
+  return Promise.all(list.map(sha256Hex));
+}
+
+let passed = [];
+try {
+  const pv = JSON.parse(localStorage.getItem(PASSKEY));
+  if (Array.isArray(pv)) passed = pv;
+} catch (e) {}
+function savePassed() {
+  try { localStorage.setItem(PASSKEY, JSON.stringify(passed)); } catch (e) {}
+}
+function hasQuiz(v) { return !!(v.q && v.aHash && v.aHash.length); }
+function isLocked(v) { return hasQuiz(v) && passed.indexOf(v.id) < 0; }
+
+/* ---------- 관리자 ---------- */
+function applyAdminUI() {
+  document.body.classList.toggle("admin", isAdmin);
+  $("adminLabel").textContent = isAdmin ? "관리자 ✓" : "관리자";
+  $("adminBtn").title = isAdmin ? "로그아웃" : "관리자 로그인";
+  $("subMsg").textContent = isAdmin ? "관리자 모드 — 추가·수정·숨김 가능" : "여행 기록 영상 모음";
+  $("syncBanner").classList.toggle("show", !configured);
+  idleCloud();
+}
+
+function openLogin() {
+  if (!configured) { openSetup(); return; }
+  $("loginId").value = "";
+  $("loginPw").value = "";
+  $("loginMsg").textContent = "";
+  $("loginOverlay").classList.add("on");
+  setTimeout(() => $("loginId").focus(), 50);
+}
+function closeLogin() { $("loginOverlay").classList.remove("on"); }
+
+// 아이디만 입력해도 되도록 내부적으로 이메일 형태로 바꿔 준다
+function toEmail(id) { return id.includes("@") ? id : id + "@travel.local"; }
+
+async function tryLogin() {
+  const id = $("loginId").value.trim();
+  const pw = $("loginPw").value;
+  if (!id || !pw) { $("loginMsg").textContent = "아이디와 비밀번호를 입력하세요."; return; }
+  $("loginMsg").textContent = "확인 중…";
+  const { error } = await supa.auth.signInWithPassword({ email: toEmail(id), password: pw });
+  if (error) {
+    $("loginMsg").textContent = "아이디 또는 비밀번호가 올바르지 않습니다.";
+    $("loginPw").select();
+    return;
   }
+  closeLogin();
+  // 로그인 후에는 숨긴 영상까지 받아와야 하므로 다시 읽는다
+  await loadVideos();
+  render();
+}
 
-  function fetchSha() {
-    return ghFetch(contentsUrl() + "?ref=" + GH.branch + "&t=" + Date.now())
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (d) { if (d && d.sha) fileSha = d.sha; return fileSha; });
-  }
+async function logout() {
+  if (!confirm("관리자 모드를 끌까요?")) return;
+  await supa.auth.signOut();
+  await loadVideos();
+  render();
+}
 
-  // videos → videos.json 커밋. 성공하면 공용 목록이 갱신되고 로컬 임시본은 비워진다.
-  function pushToCloud(attempt) {
-    attempt = attempt || 0;
-    if (!ghToken || !isAdmin) return Promise.resolve(false);
-    cloudBusy = true; refreshCloudPill();
+function openSetup() { $("tokenOverlay").classList.add("on"); }
+function closeSetup() { $("tokenOverlay").classList.remove("on"); }
 
-    var payload = JSON.stringify(videos, null, 2) + "\n";
-    var body = {
-      message: "여행 영상함 업데이트 (" + videos.length + "편)",
-      content: utf8ToB64(payload),
-      branch: GH.branch
-    };
-    if (fileSha) body.sha = fileSha;
+/* ---------- 필터 ---------- */
+function yearOf(v) { return (v.tripDate || v.added || "").slice(0, 4); }
 
-    return ghFetch(contentsUrl(), { method: "PUT", body: JSON.stringify(body) })
-      .then(function (r) {
-        if (r.ok) return r.json();
-        return r.json().catch(function () { return {}; }).then(function (e) {
-          var err = new Error(e.message || ("HTTP " + r.status));
-          err.status = r.status;
-          throw err;
-        });
-      })
-      .then(function (d) {
-        if (d.content && d.content.sha) fileSha = d.content.sha;
-        // 이제 온라인 = 화면 내용. 로컬 임시 저장분은 정리한다.
-        sharedList = JSON.parse(JSON.stringify(videos));
-        try {
-          localStorage.setItem(KEY, "[]");
-          localStorage.setItem(DELKEY, "[]");
-        } catch (e) {}
-        cloudBusy = false; cloudDirty = false;
-        refreshCloudPill(); checkSync();
-        return true;
-      })
-      .catch(function (err) {
-        // sha 충돌(다른 기기에서 먼저 저장) → 최신 sha 받아 한 번 재시도
-        if (attempt < 1 && (err.status === 409 || err.status === 422)) {
-          return fetchSha().then(function () { return pushToCloud(attempt + 1); });
-        }
-        cloudBusy = false; cloudDirty = true;
-        refreshCloudPill();
-        console.error("온라인 저장 실패:", err);
-        if (err.status === 401 || err.status === 403) {
-          setCloud("bad", "토큰 오류 — 눌러서 재설정");
-        }
-        return false;
+function buildFilters() {
+  const box = $("filters");
+  box.innerHTML = "";
+  const places = [], years = [];
+  videos.forEach((v) => {
+    if (v.place && places.indexOf(v.place) < 0) places.push(v.place);
+    const y = yearOf(v);
+    if (y && years.indexOf(y) < 0) years.push(y);
+  });
+  places.sort();
+  years.sort().reverse();
+  if (places.length < 2 && years.length < 2) return;
+
+  const chip = (label, cls, on, fn) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "chip" + (cls ? " " + cls : "") + (on ? " on" : "");
+    b.textContent = label;
+    b.addEventListener("click", fn);
+    box.appendChild(b);
+  };
+  chip("전체", "", !filterPlace && !filterYear, () => { filterPlace = ""; filterYear = ""; render(); });
+  places.forEach((p) => chip("📍 " + p, "", filterPlace === p, () => {
+    filterPlace = filterPlace === p ? "" : p; render();
+  }));
+  years.forEach((y) => chip(y, "year", filterYear === y, () => {
+    filterYear = filterYear === y ? "" : y; render();
+  }));
+}
+
+/* ---------- 렌더 ---------- */
+function render() {
+  const q = $("search").value.trim().toLowerCase();
+  const grid = $("grid");
+  grid.innerHTML = "";
+  const hiddenCount = videos.filter((v) => v.hidden).length;
+  $("count").textContent = videos.length + (isAdmin && hiddenCount ? " · 숨김 " + hiddenCount : "");
+  buildFilters();
+
+  const list = videos.slice().sort((a, b) => {
+    const ka = a.tripDate || a.added || "";
+    const kb = b.tripDate || b.added || "";
+    return sortNewest ? (ka < kb ? 1 : -1) : (ka > kb ? 1 : -1);
+  });
+
+  let shown = 0;
+  list.forEach((v) => {
+    if (q && (v.title + " " + v.place + " " + v.memo).toLowerCase().indexOf(q) < 0) return;
+    if (filterPlace && v.place !== filterPlace) return;
+    if (filterYear && yearOf(v) !== filterYear) return;
+    shown++;
+
+    const card = document.createElement("div");
+    card.className = "card" + (v.hidden ? " hidden" : "");
+    card.setAttribute("role", "listitem");
+
+    const locked = isLocked(v);
+    const th = document.createElement("button");
+    th.className = "thumb" + (locked ? " locked" : "");
+    th.type = "button";
+    th.setAttribute("aria-label", v.title + (locked ? " — 잠김, 질문에 답하면 재생" : " 재생"));
+    const img = document.createElement("img");
+    img.src = "https://i.ytimg.com/vi/" + v.id + "/hqdefault.jpg";
+    img.alt = "";
+    img.loading = "lazy";
+    th.appendChild(img);
+    const pl = document.createElement("div");
+    pl.className = "play";
+    pl.innerHTML = locked ? "<span>🔒</span>" : "<span>▶</span>";
+    th.appendChild(pl);
+    if (hasQuiz(v)) {
+      const tag = document.createElement("span");
+      tag.className = locked ? "lockTag" : "solvedTag";
+      tag.textContent = locked ? "🔒 퀴즈" : "✓ 열림";
+      th.appendChild(tag);
+    }
+    if (v.hidden) {
+      const ht = document.createElement("span");
+      ht.className = "hiddenTag";
+      ht.textContent = "🙈 숨김";
+      th.appendChild(ht);
+    }
+    th.addEventListener("click", () => { if (isLocked(v)) openQuiz(v); else openPlayer(v); });
+
+    const body = document.createElement("div");
+    body.className = "body";
+    if (v.place) {
+      const p = document.createElement("span");
+      p.className = "place";
+      p.textContent = "📍 " + v.place;
+      body.appendChild(p);
+    }
+    const t = document.createElement("div");
+    t.className = "title";
+    t.textContent = v.title;
+    body.appendChild(t);
+    if (v.memo) {
+      const mm = document.createElement("div");
+      mm.className = "memo";
+      mm.textContent = v.memo;
+      body.appendChild(mm);
+    }
+
+    const foot = document.createElement("div");
+    foot.className = "foot";
+    const dt = document.createElement("span");
+    dt.className = "date";
+    dt.textContent = v.tripDate ? v.tripDate.replace(/-/g, ".") : "";
+    foot.appendChild(dt);
+
+    if (isAdmin) {
+      const acts = document.createElement("div");
+      acts.className = "acts";
+      const eb = document.createElement("button");
+      eb.textContent = "수정";
+      eb.addEventListener("click", () => openEdit(v));
+      const hb = document.createElement("button");
+      hb.textContent = v.hidden ? "보이기" : "숨기기";
+      hb.addEventListener("click", async () => {
+        v.hidden = !v.hidden;
+        if (await saveVideo(v)) render(); else { v.hidden = !v.hidden; }
       });
-  }
-
-  function scheduleCloudSave() {
-    if (!ghToken || !isAdmin) return;
-    cloudDirty = true;
-    cloudBusy = true; refreshCloudPill();
-    clearTimeout(cloudTimer);
-    cloudTimer = setTimeout(function () { pushToCloud(0); }, 1200);
-  }
-
-  // 저장 안 된 변경이 있는 상태로 창을 닫으려 하면 경고
-  window.addEventListener("beforeunload", function (e) {
-    if (cloudDirty || cloudBusy) { e.preventDefault(); e.returnValue = ""; }
-  });
-
-  // ---- 토큰 설정 모달 ----
-  function openToken() {
-    $("tokenInput").value = "";
-    $("tokenInput").placeholder = ghToken ? "등록됨 — 바꾸려면 새 토큰 붙여넣기" : "github_pat_… 또는 ghp_…";
-    $("tokenMsg").textContent = "";
-    $("tokenMsg").className = "";
-    $("tokenRemove").style.display = ghToken ? "" : "none";
-    $("tokenOverlay").classList.add("on");
-    setTimeout(function () { $("tokenInput").focus(); }, 50);
-  }
-  function closeToken() { $("tokenOverlay").classList.remove("on"); }
-
-  $("cloudPill").addEventListener("click", function () {
-    if (ghToken && cloudDirty && !cloudBusy) { pushToCloud(0); return; }  // 재시도
-    openToken();
-  });
-
-  $("tokenSave").addEventListener("click", function () {
-    var t = $("tokenInput").value.trim();
-    if (!t) { $("tokenMsg").textContent = "토큰을 붙여넣어 주세요."; return; }
-    $("tokenMsg").className = "";
-    $("tokenMsg").textContent = "확인 중…";
-    var prev = ghToken;
-    ghToken = t;
-    ghFetch(contentsUrl() + "?ref=" + GH.branch)
-      .then(function (r) {
-        if (!r.ok) throw new Error(r.status === 404 ? "저장소를 찾을 수 없습니다 (권한 범위 확인)" : "인증 실패 (HTTP " + r.status + ")");
-        return r.json();
-      })
-      .then(function (d) {
-        fileSha = d.sha;
-        try { localStorage.setItem(GHKEY, ghToken); } catch (e) {}
-        $("tokenMsg").className = "ok";
-        $("tokenMsg").textContent = "연결됐습니다! 이제 수정하면 자동으로 온라인에 저장됩니다.";
-        refreshCloudPill(); checkSync();
-        setTimeout(closeToken, 1200);
-      })
-      .catch(function (err) {
-        ghToken = prev;
-        $("tokenMsg").className = "";
-        $("tokenMsg").textContent = err.message;
+      const db = document.createElement("button");
+      db.textContent = "삭제";
+      db.addEventListener("click", async () => {
+        if (!confirm('"' + v.title + '" 카드를 삭제할까요?')) return;
+        if (await removeVideo(v.id)) {
+          videos = videos.filter((x) => x.id !== v.id);
+          render();
+        }
       });
+      acts.appendChild(eb); acts.appendChild(hb); acts.appendChild(db);
+      foot.appendChild(acts);
+    }
+    body.appendChild(foot);
+
+    card.appendChild(th);
+    card.appendChild(body);
+    grid.appendChild(card);
   });
 
-  $("tokenRemove").addEventListener("click", function () {
-    if (!confirm("이 기기에서 토큰을 지울까요?\n(수정 내용이 온라인에 저장되지 않고 이 브라우저에만 남습니다)")) return;
-    ghToken = "";
-    try { localStorage.removeItem(GHKEY); } catch (e) {}
-    cloudDirty = false;
-    refreshCloudPill(); checkSync(); closeToken();
-  });
-
-  $("tokenCancel").addEventListener("click", closeToken);
-  $("tokenOverlay").addEventListener("click", function (e) { if (e.target === this) closeToken(); });
-
-  // ---------- 관리자 ----------
-  // 아이디:비밀번호의 SHA-256 해시만 보관한다 (소스에 평문이 남지 않게).
-  var ADMIN_HASH = "6b96aa0dcd27ed746cf9e20aa084cccd54c46ed22373521f0fdd58b253644c9e";
-  var isAdmin = false;
-  try { isAdmin = localStorage.getItem(ADMINKEY) === ADMIN_HASH; } catch (e) {}
-
-  function applyAdminUI() {
-    document.body.classList.toggle("admin", isAdmin);
-    $("adminLabel").textContent = isAdmin ? "관리자 ✓" : "관리자";
-    $("adminBtn").title = isAdmin ? "로그아웃" : "관리자 로그인";
-    $("subMsg").textContent = isAdmin ? "관리자 모드 — 추가·수정·숨김 가능" : "여행 기록 영상 모음";
-    refreshCloudPill();
+  if (shown === 0) {
+    const em = document.createElement("div");
+    em.id = "empty";
+    em.innerHTML = (q || filterPlace || filterYear)
+      ? "조건에 맞는 영상이 없습니다."
+      : (isAdmin
+        ? "아직 보관한 영상이 없습니다.<br>위에 <b>유튜브 링크를 붙여넣고 추가</b>를 눌러보세요."
+        : "아직 공개된 영상이 없습니다.");
+    grid.appendChild(em);
   }
+}
 
-  function openLogin() {
-    $("loginId").value = "";
-    $("loginPw").value = "";
-    $("loginMsg").textContent = "";
-    $("loginOverlay").classList.add("on");
-    setTimeout(function () { $("loginId").focus(); }, 50);
-  }
-  function closeLogin() { $("loginOverlay").classList.remove("on"); }
+/* ---------- 추가 ---------- */
+function parseId(url) {
+  const m = url.match(/(?:youtube\.com\/(?:watch\?[^#]*v=|shorts\/|embed\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+function msg(t) {
+  $("addMsg").textContent = t || "";
+  $("addMsg").style.display = t ? "block" : "none";
+}
 
-  function tryLogin() {
-    var id = $("loginId").value.trim();
-    var pw = $("loginPw").value;
-    if (!id || !pw) { $("loginMsg").textContent = "아이디와 비밀번호를 입력하세요."; return; }
-    if (!(window.crypto && crypto.subtle)) {
-      $("loginMsg").textContent = "이 환경에서는 로그인할 수 없습니다 (https 주소로 접속해 주세요).";
-      return;
-    }
-    sha256Hex(id + ":" + pw).then(function (h) {
-      if (h === ADMIN_HASH) {
-        isAdmin = true;
-        try { localStorage.setItem(ADMINKEY, ADMIN_HASH); } catch (e) {}
-        applyAdminUI(); closeLogin(); render(); checkSync();
-      } else {
-        $("loginMsg").textContent = "아이디 또는 비밀번호가 올바르지 않습니다.";
-        $("loginPw").select();
-      }
-    });
-  }
+async function addVideo() {
+  const url = $("linkInput").value.trim();
+  if (!url) return;
+  const id = parseId(url);
+  if (!id) { msg("유튜브 링크가 아닌 것 같습니다. youtube.com 또는 youtu.be 주소를 붙여넣어 주세요."); return; }
+  if (videos.some((v) => v.id === id)) { msg("이미 보관함에 있는 영상입니다."); return; }
+  msg("");
+  $("addBtn").disabled = true;
+  $("addBtn").textContent = "가져오는 중…";
 
-  $("adminBtn").addEventListener("click", function () {
-    if (!isAdmin) { openLogin(); return; }
-    if (confirm("관리자 모드를 끌까요?")) {
-      isAdmin = false;
-      try { localStorage.removeItem(ADMINKEY); } catch (e) {}
-      applyAdminUI(); render(); checkSync();
-    }
-  });
-  $("loginGo").addEventListener("click", tryLogin);
-  $("loginPw").addEventListener("keydown", function (e) { if (e.key === "Enter") tryLogin(); });
-  $("loginId").addEventListener("keydown", function (e) { if (e.key === "Enter") $("loginPw").focus(); });
-  $("loginCancel").addEventListener("click", closeLogin);
-  $("loginOverlay").addEventListener("click", function (e) { if (e.target === this) closeLogin(); });
-
-  // ---------- 퀴즈 잠금 ----------
-  // 정답은 해시로만 저장한다(소스에 평문이 남지 않게).
-  function normAnswer(s) {
-    return String(s || "")
-      .normalize("NFC")
-      .toLowerCase()
-      .replace(/\s+/g, "")
-      .replace(/[.,!?~·・"'’”…\-_/\\()[\]{}]/g, "");
-  }
-
-  function sha256Hex(str) {
-    if (window.crypto && crypto.subtle) {
-      return crypto.subtle.digest("SHA-256", new TextEncoder().encode(str))
-        .then(function (buf) {
-          return Array.prototype.map.call(new Uint8Array(buf), function (b) {
-            return b.toString(16).padStart(2, "0");
-          }).join("");
-        });
-    }
-    // http:// 등 보안 컨텍스트가 아니면 해시 불가 → 평문 비교로 폴백
-    return Promise.resolve("plain:" + str);
-  }
-
-  function hashAnswers(csv) {
-    var list = String(csv || "").split(",").map(normAnswer).filter(Boolean);
-    return Promise.all(list.map(sha256Hex));
-  }
-
-  var passed = [];
+  let title = "제목 없음 (직접 입력)";
   try {
-    var pv = JSON.parse(localStorage.getItem(PASSKEY));
-    if (Array.isArray(pv)) passed = pv;
+    const r = await fetch("https://noembed.com/embed?url=" + encodeURIComponent("https://www.youtube.com/watch?v=" + id));
+    const d = await r.json();
+    if (d && d.title) title = d.title;
   } catch (e) {}
-  function savePassed() {
-    try { localStorage.setItem(PASSKEY, JSON.stringify(passed)); } catch (e) {}
-  }
-  function hasQuiz(v) { return !!(v.q && ((v.aHash && v.aHash.length) || v.a)); }
-  function isLocked(v) { return hasQuiz(v) && passed.indexOf(v.id) < 0; }
 
-  // 공용 목록(videos.json, 저장소에 커밋됨) + 이 브라우저의 변경분(localStorage)을 합쳐서 보여줌
-  var sharedList = [];   // videos.json 원본
-  var videos = [];       // 화면에 쓰는 병합 목록
+  const item = {
+    id, title, place: "", memo: "", tripDate: "",
+    added: new Date().toISOString().slice(0, 10),
+    hidden: false, q: "", aHash: [], hint: ""
+  };
 
-  function loadLocal(key) {
-    try {
-      var v = JSON.parse(localStorage.getItem(key));
-      if (Array.isArray(v)) return v;
-    } catch (e) {}
-    return [];
-  }
+  const ok = await saveVideo(item);
+  $("addBtn").disabled = false;
+  $("addBtn").textContent = "추가";
+  if (!ok) return;
+  $("linkInput").value = "";
+  videos.push(item);
+  render();
+  openEdit(item);
+}
 
-  function mergeLists() {
-    var overlay = loadLocal(KEY);
-    var deleted = loadLocal(DELKEY);
-    var byId = {};
-    overlay.forEach(function (v) { if (v && v.id) byId[v.id] = v; });
-    videos = [];
-    sharedList.forEach(function (s) {
-      if (deleted.indexOf(s.id) >= 0) return;
-      // 공용 항목은 복사본을 넣는다. 원본을 그대로 넣으면 수정 시 sharedList까지
-      // 같이 바뀌어 "변경 없음"으로 판정되고 저장이 되지 않는다.
-      videos.push(byId[s.id] || JSON.parse(JSON.stringify(s)));
-      delete byId[s.id];
-    });
-    overlay.forEach(function (v) {
-      if (v && v.id && byId[v.id]) videos.push(v);
-    });
-  }
+/* ---------- 퀴즈 ---------- */
+let quizVideo = null, tries = 0;
 
-  function save() {
-    try {
-      var sharedJson = {};
-      sharedList.forEach(function (s) { sharedJson[s.id] = JSON.stringify(s); });
-      // 공용 목록과 다른 항목(수정본·새 항목)만 이 브라우저에 저장
-      var overlay = videos.filter(function (v) { return sharedJson[v.id] !== JSON.stringify(v); });
-      // 공용 목록에 있지만 화면 목록에서 지운 것 = 이 브라우저에서의 삭제
-      var deleted = sharedList.filter(function (s) {
-        return !videos.some(function (v) { return v.id === s.id; });
-      }).map(function (s) { return s.id; });
-      localStorage.setItem(KEY, JSON.stringify(overlay));
-      localStorage.setItem(DELKEY, JSON.stringify(deleted));
-    } catch (e) {}
-    checkSync();
-    scheduleCloudSave();   // 관리자 + 토큰 등록 시 온라인에도 반영
-  }
+function openQuiz(v) {
+  quizVideo = v; tries = 0;
+  $("quizVideoTitle").textContent = v.title;
+  $("quizQ").textContent = v.q;
+  $("quizA").value = "";
+  $("quizMsg").textContent = "";
+  $("quizMsg").className = "";
+  $("qHint").style.display = v.hint ? "" : "none";
+  $("quizOverlay").classList.add("on");
+  setTimeout(() => $("quizA").focus(), 50);
+}
+function closeQuiz() { $("quizOverlay").classList.remove("on"); quizVideo = null; }
 
-  function parseId(url) {
-    var m = url.match(/(?:youtube\.com\/(?:watch\?[^#]*v=|shorts\/|embed\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
-    return m ? m[1] : null;
-  }
-
-  var sortNewest = true;
-  var filterPlace = "";
-  var filterYear = "";
-
-  function yearOf(v) {
-    var d = v.tripDate || v.added || "";
-    return d.slice(0, 4);
-  }
-
-  // 숨김 영상은 관리자에게만 보인다
-  function visibleVideos() {
-    return isAdmin ? videos : videos.filter(function (v) { return !v.hidden; });
-  }
-
-  function buildFilters() {
-    var box = $("filters");
-    box.innerHTML = "";
-    var places = [], years = [];
-    visibleVideos().forEach(function (v) {
-      if (v.place && places.indexOf(v.place) < 0) places.push(v.place);
-      var y = yearOf(v);
-      if (y && years.indexOf(y) < 0) years.push(y);
-    });
-    places.sort();
-    years.sort().reverse();
-    if (places.length < 2 && years.length < 2) return; // 필터할 게 없으면 숨김
-
-    function chip(label, cls, on, fn) {
-      var b = document.createElement("button");
-      b.type = "button";
-      b.className = "chip" + (cls ? " " + cls : "") + (on ? " on" : "");
-      b.textContent = label;
-      b.addEventListener("click", fn);
-      box.appendChild(b);
-    }
-    chip("전체", "", !filterPlace && !filterYear, function () {
-      filterPlace = ""; filterYear = ""; render();
-    });
-    places.forEach(function (p) {
-      chip("📍 " + p, "", filterPlace === p, function () {
-        filterPlace = filterPlace === p ? "" : p; render();
-      });
-    });
-    years.forEach(function (y) {
-      chip(y, "year", filterYear === y, function () {
-        filterYear = filterYear === y ? "" : y; render();
-      });
-    });
-  }
-
-  function msg(t) {
-    var el = $("addMsg");
-    el.textContent = t || "";
-    el.style.display = t ? "block" : "none";
-  }
-
-  function render() {
-    var q = $("search").value.trim().toLowerCase();
-    var grid = $("grid");
-    grid.innerHTML = "";
-    var pool = visibleVideos();
-    var hiddenCount = videos.filter(function (v) { return v.hidden; }).length;
-    $("count").textContent = pool.length + (isAdmin && hiddenCount ? " · 숨김 " + hiddenCount : "");
-    buildFilters();
-
-    var list = pool.slice().sort(function (a, b) {
-      var ka = a.tripDate || a.added || "";
-      var kb = b.tripDate || b.added || "";
-      return sortNewest ? (ka < kb ? 1 : -1) : (ka > kb ? 1 : -1);
-    });
-
-    var shown = 0;
-    list.forEach(function (v) {
-      if (q && (v.title + " " + (v.place || "") + " " + (v.memo || "")).toLowerCase().indexOf(q) < 0) return;
-      if (filterPlace && v.place !== filterPlace) return;
-      if (filterYear && yearOf(v) !== filterYear) return;
-      shown++;
-      var idx = videos.indexOf(v);
-
-      var card = document.createElement("div");
-      card.className = "card" + (v.hidden ? " hidden" : "");
-      card.setAttribute("role", "listitem");
-
-      var locked = isLocked(v);
-      var th = document.createElement("button");
-      th.className = "thumb" + (locked ? " locked" : "");
-      th.type = "button";
-      th.setAttribute("aria-label", v.title + (locked ? " — 잠김, 질문에 답하면 재생" : " 재생"));
-      var img = document.createElement("img");
-      img.src = "https://i.ytimg.com/vi/" + v.id + "/hqdefault.jpg";
-      img.alt = "";
-      img.loading = "lazy";
-      th.appendChild(img);
-      var pl = document.createElement("div");
-      pl.className = "play";
-      pl.innerHTML = locked ? "<span>🔒</span>" : "<span>▶</span>";
-      th.appendChild(pl);
-      if (hasQuiz(v)) {
-        var tag = document.createElement("span");
-        tag.className = locked ? "lockTag" : "solvedTag";
-        tag.textContent = locked ? "🔒 퀴즈" : "✓ 열림";
-        th.appendChild(tag);
-      }
-      if (v.hidden) {
-        var ht = document.createElement("span");
-        ht.className = "hiddenTag";
-        ht.textContent = "🙈 숨김";
-        th.appendChild(ht);
-      }
-      th.addEventListener("click", function () {
-        if (isLocked(v)) openQuiz(v); else openPlayer(v);
-      });
-
-      var body = document.createElement("div");
-      body.className = "body";
-      if (v.place) {
-        var p = document.createElement("span");
-        p.className = "place";
-        p.textContent = "📍 " + v.place;
-        body.appendChild(p);
-      }
-      var t = document.createElement("div");
-      t.className = "title";
-      t.textContent = v.title;
-      body.appendChild(t);
-      if (v.memo) {
-        var mm = document.createElement("div");
-        mm.className = "memo";
-        mm.textContent = v.memo;
-        body.appendChild(mm);
-      }
-
-      var foot = document.createElement("div");
-      foot.className = "foot";
-      var dt = document.createElement("span");
-      dt.className = "date";
-      dt.textContent = v.tripDate ? v.tripDate.replace(/-/g, ".") : "";
-      foot.appendChild(dt);
-      if (isAdmin) {
-        var acts = document.createElement("div");
-        acts.className = "acts";
-        var eb = document.createElement("button");
-        eb.textContent = "수정";
-        eb.addEventListener("click", function () { openEdit(idx); });
-        var hb = document.createElement("button");
-        hb.textContent = v.hidden ? "보이기" : "숨기기";
-        hb.title = v.hidden ? "다시 모두에게 보이게" : "일반 사용자에게 안 보이게";
-        hb.addEventListener("click", function () {
-          if (v.hidden) delete v.hidden; else v.hidden = true;
-          save(); render();
-        });
-        var db = document.createElement("button");
-        db.textContent = "삭제";
-        db.addEventListener("click", function () {
-          if (confirm('"' + v.title + '" 카드를 삭제할까요?')) {
-            videos.splice(idx, 1); save(); render();
-          }
-        });
-        acts.appendChild(eb);
-        acts.appendChild(hb);
-        acts.appendChild(db);
-        foot.appendChild(acts);
-      }
-      body.appendChild(foot);
-
-      card.appendChild(th);
-      card.appendChild(body);
-      grid.appendChild(card);
-    });
-
-    if (shown === 0) {
-      var em = document.createElement("div");
-      em.id = "empty";
-      em.innerHTML = (q || filterPlace || filterYear)
-        ? "조건에 맞는 영상이 없습니다."
-        : (isAdmin
-          ? "아직 보관한 영상이 없습니다.<br>위에 <b>유튜브 링크를 붙여넣고 추가</b>를 눌러보세요.<br>제목과 썸네일은 자동으로 가져옵니다."
-          : "아직 공개된 영상이 없습니다.");
-      grid.appendChild(em);
-    }
-  }
-
-  // ---------- 추가 ----------
-  function addVideo() {
-    var url = $("linkInput").value.trim();
-    if (!url) return;
-    var id = parseId(url);
-    if (!id) { msg("유튜브 링크가 아닌 것 같습니다. youtube.com 또는 youtu.be 주소를 붙여넣어 주세요."); return; }
-    if (videos.some(function (v) { return v.id === id; })) { msg("이미 보관함에 있는 영상입니다."); return; }
-    msg("");
-    $("addBtn").disabled = true;
-    $("addBtn").textContent = "가져오는 중…";
-
-    var item = {
-      id: id,
-      title: "제목 불러오는 중…",
-      place: "", memo: "", tripDate: "",
-      added: new Date().toISOString().slice(0, 10)
-    };
-
-    fetch("https://noembed.com/embed?url=" + encodeURIComponent("https://www.youtube.com/watch?v=" + id))
-      .then(function (r) { return r.json(); })
-      .then(function (d) { item.title = d.title || "제목 없음 (직접 입력)"; })
-      .catch(function () { item.title = "제목 없음 (직접 입력)"; })
-      .then(function () {
-        videos.push(item);
-        save();
-        $("linkInput").value = "";
-        $("addBtn").disabled = false;
-        $("addBtn").textContent = "추가";
-        render();
-        openEdit(videos.length - 1); // 바로 여행지·날짜 입력
-      });
-  }
-  $("addBtn").addEventListener("click", addVideo);
-  $("linkInput").addEventListener("keydown", function (e) { if (e.key === "Enter") addVideo(); });
-
-  // ---------- 퀴즈 ----------
-  var quizVideo = null, tries = 0;
-
-  function openQuiz(v) {
-    quizVideo = v;
-    tries = 0;
-    $("quizVideoTitle").textContent = v.title;
-    $("quizQ").textContent = v.q;
-    $("quizA").value = "";
-    $("quizMsg").textContent = "";
-    $("quizMsg").className = "";
-    $("qHint").style.display = v.hint ? "" : "none";
-    $("quizOverlay").classList.add("on");
-    setTimeout(function () { $("quizA").focus(); }, 50);
-  }
-
-  function closeQuiz() {
-    $("quizOverlay").classList.remove("on");
-    quizVideo = null;
-  }
-
-  function checkAnswer() {
-    if (!quizVideo) return;
-    var v = quizVideo;
-    var input = normAnswer($("quizA").value);
-    if (!input) return;
-
-    sha256Hex(input).then(function (h) {
-      var ok = false;
-      if (v.aHash && v.aHash.length) ok = v.aHash.indexOf(h) >= 0;
-      if (!ok && v.a) {
-        // 평문 정답(구버전 데이터)도 지원
-        ok = String(v.a).split(",").map(normAnswer).filter(Boolean).indexOf(input) >= 0;
-      }
-
-      if (ok) {
-        if (passed.indexOf(v.id) < 0) { passed.push(v.id); savePassed(); }
-        $("quizMsg").className = "hint";
-        $("quizMsg").textContent = "정답입니다! 영상을 재생합니다 🎉";
-        setTimeout(function () { closeQuiz(); render(); openPlayer(v); }, 550);
-      } else {
-        tries++;
-        $("quizBox").classList.remove("shake");
-        void $("quizBox").offsetWidth;
-        $("quizBox").classList.add("shake");
-        $("quizMsg").className = "bad";
-        $("quizMsg").textContent = "땡! 다시 생각해 보세요. (" + tries + "번째 시도)" +
-          (tries >= 3 && v.hint ? " — 힌트 버튼을 눌러보세요." : "");
-        $("quizA").select();
-      }
-    });
-  }
-
-  $("qSubmit").addEventListener("click", checkAnswer);
-  $("quizA").addEventListener("keydown", function (e) { if (e.key === "Enter") checkAnswer(); });
-  $("qCancel").addEventListener("click", closeQuiz);
-  $("qHint").addEventListener("click", function () {
-    if (!quizVideo || !quizVideo.hint) return;
+async function checkAnswer() {
+  if (!quizVideo) return;
+  const v = quizVideo;
+  const input = normAnswer($("quizA").value);
+  if (!input) return;
+  const h = await sha256Hex(input);
+  if (v.aHash.indexOf(h) >= 0) {
+    if (passed.indexOf(v.id) < 0) { passed.push(v.id); savePassed(); }
     $("quizMsg").className = "hint";
-    $("quizMsg").textContent = "💡 " + quizVideo.hint;
-  });
-  $("quizOverlay").addEventListener("click", function (e) { if (e.target === this) closeQuiz(); });
-
-  // ---------- 재생 ----------
-  function openPlayer(v) {
-    if (isLocked(v)) { openQuiz(v); return; }
-    $("playerFrame").src = "https://www.youtube-nocookie.com/embed/" + v.id + "?autoplay=1";
-    $("pTitle").textContent = v.title;
-    $("pYoutube").href = "https://www.youtube.com/watch?v=" + v.id;
-    $("playerOverlay").classList.add("on");
+    $("quizMsg").textContent = "정답입니다! 영상을 재생합니다 🎉";
+    setTimeout(() => { closeQuiz(); render(); openPlayer(v); }, 550);
+  } else {
+    tries++;
+    $("quizBox").classList.remove("shake");
+    void $("quizBox").offsetWidth;
+    $("quizBox").classList.add("shake");
+    $("quizMsg").className = "bad";
+    $("quizMsg").textContent = "땡! 다시 생각해 보세요. (" + tries + "번째 시도)" +
+      (tries >= 3 && v.hint ? " — 힌트 버튼을 눌러보세요." : "");
+    $("quizA").select();
   }
-  function closePlayer() {
-    $("playerOverlay").classList.remove("on");
-    $("playerFrame").src = "about:blank";
-  }
-  $("pClose").addEventListener("click", closePlayer);
-  $("playerOverlay").addEventListener("click", function (e) { if (e.target === this) closePlayer(); });
+}
 
-  // ---------- 수정 ----------
-  var editIdx = -1;
-  function openEdit(idx) {
-    editIdx = idx;
-    var v = videos[idx];
-    $("eTitle").value = v.title;
-    $("ePlace").value = v.place || "";
-    $("eDate").value = v.tripDate || "";
-    $("eMemo").value = v.memo || "";
-    $("eQ").value = v.q || "";
-    $("eHint").value = v.hint || "";
-    // 저장된 정답은 해시라 되돌릴 수 없음 → 빈칸 + 안내
-    $("eA").value = v.a || "";
-    $("eA").placeholder = (v.aHash && v.aHash.length)
-      ? "정답 " + v.aHash.length + "개 저장됨 (바꿀 때만 새로 입력)"
-      : "예: 마라탕, 마라샹궈";
-    $("editOverlay").classList.add("on");
-    $("ePlace").focus();
-  }
-  function closeEdit() { $("editOverlay").classList.remove("on"); }
-  $("eSave").addEventListener("click", function () {
-    if (editIdx < 0) return;
-    var v = videos[editIdx];
-    v.title = $("eTitle").value.trim() || v.title;
-    v.place = $("ePlace").value.trim();
-    v.tripDate = $("eDate").value;
-    v.memo = $("eMemo").value.trim();
+/* ---------- 재생 ---------- */
+function openPlayer(v) {
+  if (isLocked(v)) { openQuiz(v); return; }
+  $("playerFrame").src = "https://www.youtube-nocookie.com/embed/" + v.id + "?autoplay=1";
+  $("pTitle").textContent = v.title;
+  $("pYoutube").href = "https://www.youtube.com/watch?v=" + v.id;
+  $("playerOverlay").classList.add("on");
+}
+function closePlayer() {
+  $("playerOverlay").classList.remove("on");
+  $("playerFrame").src = "about:blank";
+}
 
-    var q = $("eQ").value.trim();
-    var aRaw = $("eA").value.trim();
-    var hint = $("eHint").value.trim();
+/* ---------- 수정 ---------- */
+let editing = null;
+function openEdit(v) {
+  editing = v;
+  $("eTitle").value = v.title;
+  $("ePlace").value = v.place || "";
+  $("eDate").value = v.tripDate || "";
+  $("eMemo").value = v.memo || "";
+  $("eQ").value = v.q || "";
+  $("eHint").value = v.hint || "";
+  $("eA").value = "";
+  $("eA").placeholder = (v.aHash && v.aHash.length)
+    ? "정답 " + v.aHash.length + "개 저장됨 (바꿀 때만 새로 입력)"
+    : "예: 마라탕, 마라샹궈";
+  $("editOverlay").classList.add("on");
+  $("ePlace").focus();
+}
+function closeEdit() { $("editOverlay").classList.remove("on"); editing = null; }
 
-    var finish = function () {
-      // 질문이 지워지면 잠금 해제 상태 기록도 정리
-      if (!hasQuiz(v)) {
-        var pi = passed.indexOf(v.id);
-        if (pi >= 0) { passed.splice(pi, 1); savePassed(); }
-      }
-      save(); closeEdit(); render();
-    };
+async function saveEdit() {
+  if (!editing) return;
+  const v = editing;
+  const before = JSON.stringify(v);
 
-    if (!q) {
-      delete v.q; delete v.aHash; delete v.a; delete v.hint;
-      finish();
-      return;
-    }
+  v.title = $("eTitle").value.trim() || v.title;
+  v.place = $("ePlace").value.trim();
+  v.tripDate = $("eDate").value;
+  v.memo = $("eMemo").value.trim();
 
+  const q = $("eQ").value.trim();
+  const aRaw = $("eA").value.trim();
+  const hint = $("eHint").value.trim();
+
+  if (!q) {
+    v.q = ""; v.aHash = []; v.hint = "";
+    const i = passed.indexOf(v.id);
+    if (i >= 0) { passed.splice(i, 1); savePassed(); }
+  } else {
     v.q = q;
-    if (hint) v.hint = hint; else delete v.hint;
-
+    v.hint = hint;
     if (aRaw) {
-      hashAnswers(aRaw).then(function (hashes) {
-        if (hashes.length) { v.aHash = hashes; delete v.a; }
-        // 문제를 낸 사람은 굳이 자기 퀴즈를 다시 풀 필요 없음
-        if (passed.indexOf(v.id) < 0) { passed.push(v.id); savePassed(); }
-        finish();
-      });
-    } else {
-      finish();
+      v.aHash = await hashAnswers(aRaw);
+      if (passed.indexOf(v.id) < 0) { passed.push(v.id); savePassed(); }
     }
-  });
-  $("eCancel").addEventListener("click", closeEdit);
-  $("editOverlay").addEventListener("click", function (e) { if (e.target === this) closeEdit(); });
-  document.addEventListener("keydown", function (e) {
-    if (e.key !== "Escape") return;
-    if ($("tokenOverlay").classList.contains("on")) closeToken();
-    else if ($("loginOverlay").classList.contains("on")) closeLogin();
-    else if ($("editOverlay").classList.contains("on")) closeEdit();
-    else if ($("quizOverlay").classList.contains("on")) closeQuiz();
-    else if ($("playerOverlay").classList.contains("on")) closePlayer();
-  });
-
-  // ---------- 정렬·검색 ----------
-  $("sortBtn").addEventListener("click", function () {
-    sortNewest = !sortNewest;
-    this.textContent = sortNewest ? "최신순" : "오래된순";
-    render();
-  });
-  $("search").addEventListener("input", render);
-
-  $("relockBtn").addEventListener("click", function () {
-    if (!passed.length) { alert("지금 열려 있는 퀴즈 영상이 없습니다."); return; }
-    if (confirm("풀었던 퀴즈 " + passed.length + "개를 다시 잠글까요?\n(다음에 재생하려면 정답을 다시 맞혀야 합니다)")) {
-      passed = []; savePassed(); render();
-    }
-  });
-
-  // ---------- 백업 ----------
-  $("exportBtn").addEventListener("click", function () {
-    var blob = new Blob([JSON.stringify(videos, null, 2)], { type: "application/json" });
-    var a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "travel-videos-backup.json";
-    a.click();
-    URL.revokeObjectURL(a.href);
-  });
-  $("importBtn").addEventListener("click", function () { $("importFile").click(); });
-  $("importFile").addEventListener("change", function () {
-    var f = this.files[0];
-    if (!f) return;
-    var r = new FileReader();
-    r.onload = function () {
-      try {
-        var data = JSON.parse(r.result);
-        if (!Array.isArray(data)) throw 0;
-        videos = data.filter(function (v) { return v && v.id && v.title; });
-        save(); render();
-      } catch (e) { alert("백업 파일 형식이 올바르지 않습니다."); }
-    };
-    r.readAsText(f);
-    this.value = "";
-  });
-
-  // ---------- 시작: 공용 목록 로드 후 렌더 ----------
-  applyAdminUI();
-  mergeLists();
-  render(); // 우선 로컬 데이터로 표시
-  fetch("videos.json?v=" + Date.now())
-    .then(function (r) { return r.ok ? r.json() : []; })
-    .then(function (d) { if (Array.isArray(d)) sharedList = d; })
-    .catch(function () {})
-    .then(function () {
-      mergeLists(); render();
-      // ?export=1 로 열면 이 브라우저의 병합 목록을 URL 해시에 실어줌 (마이그레이션용, 서버로 전송되지 않음)
-      if (location.search.indexOf("export=1") >= 0) {
-        try {
-          location.hash = "data=" + btoa(unescape(encodeURIComponent(JSON.stringify(videos))));
-        } catch (e) {}
-      }
-      checkSync();
-
-      // 온라인 저장이 켜져 있으면: 최신 sha를 확보하고, 아직 못 올린 변경이 있으면 알려준다
-      if (ghToken && isAdmin) {
-        fetchSha().then(function () {
-          var sharedJson = {};
-          sharedList.forEach(function (s) { sharedJson[s.id] = JSON.stringify(s); });
-          var pending = videos.filter(function (v) { return sharedJson[v.id] !== JSON.stringify(v); });
-          cloudDirty = pending.length > 0;   // 눌러서 올리도록 (자동 덮어쓰기는 하지 않음)
-          refreshCloudPill();
-        });
-      } else {
-        refreshCloudPill();
-      }
-    });
-
-  // 이 기기에만 있는 변경(새 영상·수정·퀴즈 추가)이 있으면 공용 반영 안내 배너 표시
-  function checkSync() {
-    var sharedJson = {};
-    sharedList.forEach(function (s) { sharedJson[s.id] = JSON.stringify(s); });
-    var changed = videos.filter(function (v) { return sharedJson[v.id] !== JSON.stringify(v); });
-    $("syncCount").textContent = changed.length;
-    // 온라인 저장이 켜져 있으면 수동 복사 안내는 필요 없다
-    // (실제 표시 여부는 CSS가 관리자일 때만 허용한다)
-    $("syncBanner").classList.toggle("show", changed.length > 0 && !ghToken);
   }
-  $("syncSetup").addEventListener("click", openToken);
-  $("syncCopy").addEventListener("click", function () {
-    var code = JSON.stringify(videos, null, 2);
-    function ok() { $("syncMsg").textContent = "복사됨! 관리자에게 붙여넣어 주세요."; }
-    function fail() { prompt("아래 코드를 전체 선택해 복사하세요", code); }
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(code).then(ok, fail);
-    } else { fail(); }
-  });
+
+  if (await saveVideo(v)) { closeEdit(); render(); }
+  else { Object.assign(v, JSON.parse(before)); }
+}
+
+/* ---------- 이벤트 ---------- */
+$("addBtn").addEventListener("click", addVideo);
+$("linkInput").addEventListener("keydown", (e) => { if (e.key === "Enter") addVideo(); });
+
+$("adminBtn").addEventListener("click", () => { isAdmin ? logout() : openLogin(); });
+$("loginGo").addEventListener("click", tryLogin);
+$("loginPw").addEventListener("keydown", (e) => { if (e.key === "Enter") tryLogin(); });
+$("loginId").addEventListener("keydown", (e) => { if (e.key === "Enter") $("loginPw").focus(); });
+$("loginCancel").addEventListener("click", closeLogin);
+$("loginOverlay").addEventListener("click", function (e) { if (e.target === this) closeLogin(); });
+
+$("cloudPill").addEventListener("click", () => { if (!configured) openSetup(); });
+$("syncSetup").addEventListener("click", openSetup);
+$("tokenCancel").addEventListener("click", closeSetup);
+$("tokenOverlay").addEventListener("click", function (e) { if (e.target === this) closeSetup(); });
+
+$("qSubmit").addEventListener("click", checkAnswer);
+$("quizA").addEventListener("keydown", (e) => { if (e.key === "Enter") checkAnswer(); });
+$("qCancel").addEventListener("click", closeQuiz);
+$("qHint").addEventListener("click", () => {
+  if (!quizVideo || !quizVideo.hint) return;
+  $("quizMsg").className = "hint";
+  $("quizMsg").textContent = "💡 " + quizVideo.hint;
+});
+$("quizOverlay").addEventListener("click", function (e) { if (e.target === this) closeQuiz(); });
+
+$("pClose").addEventListener("click", closePlayer);
+$("playerOverlay").addEventListener("click", function (e) { if (e.target === this) closePlayer(); });
+
+$("eSave").addEventListener("click", saveEdit);
+$("eCancel").addEventListener("click", closeEdit);
+$("editOverlay").addEventListener("click", function (e) { if (e.target === this) closeEdit(); });
+
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  if ($("tokenOverlay").classList.contains("on")) closeSetup();
+  else if ($("loginOverlay").classList.contains("on")) closeLogin();
+  else if ($("editOverlay").classList.contains("on")) closeEdit();
+  else if ($("quizOverlay").classList.contains("on")) closeQuiz();
+  else if ($("playerOverlay").classList.contains("on")) closePlayer();
+});
+
+$("sortBtn").addEventListener("click", function () {
+  sortNewest = !sortNewest;
+  this.textContent = sortNewest ? "최신순" : "오래된순";
+  render();
+});
+$("search").addEventListener("input", render);
+
+$("relockBtn").addEventListener("click", () => {
+  if (!passed.length) { alert("지금 열려 있는 퀴즈 영상이 없습니다."); return; }
+  if (confirm("풀었던 퀴즈 " + passed.length + "개를 다시 잠글까요?")) {
+    passed = []; savePassed(); render();
+  }
+});
+
+$("exportBtn").addEventListener("click", () => {
+  const blob = new Blob([JSON.stringify(videos, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "travel-videos-backup.json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+/* ---------- 시작 ---------- */
+(async function start() {
+  if (configured) {
+    const { data } = await supa.auth.getSession();
+    isAdmin = !!(data && data.session);
+    supa.auth.onAuthStateChange((_e, session) => {
+      const now = !!session;
+      if (now !== isAdmin) { isAdmin = now; applyAdminUI(); loadVideos().then(render); }
+    });
+  }
+  applyAdminUI();
+  await loadVideos();
+  render();
+  idleCloud();
 })();
 </script>
 </body>
